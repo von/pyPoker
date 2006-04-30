@@ -61,6 +61,26 @@ class TestSequenceFunctions(unittest.TestCase):
 	self.assertEquals(cards[2], Rank.TEN, "%s" % cards)
 	self.assertEquals(cards[3], Rank.SEVEN, "%s" % cards)
 	self.assertEquals(cards[4], Rank.THREE, "%s" % cards)
-
+	
+    def testCombinations(self):
+	"""Test basic hand combinatins."""
+	cards = Cards.fromString("8C 9D 7C 6S AH")
+	count = 0
+	for combs in cards.combinations(2):
+	    count += 1
+	    self.assertEquals(len(combs), 2)
+	self.assertEquals(count, 10)
+	count = 0
+	for combs in cards.combinations(5):
+	    count += 1
+	    self.assertEquals(len(combs), 5)
+	self.assertEquals(count, 1)
+	cards.addCardsFromString("AS 2C")
+	count = 0
+	for combs in cards.combinations(5):
+	    count += 1
+	    self.assertEquals(len(combs), 5)
+	self.assertEquals(count, 21)
+    
 if __name__ == "__main__":
     unittest.main()
