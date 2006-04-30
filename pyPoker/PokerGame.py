@@ -14,7 +14,7 @@ from Hand import Hand, Hands, CommunityCardHand, HoldEmHand, FiveCardStudHand, O
 from Cards import Cards
 from Deck import Deck
 from Utils import assertInstance
-from PokerRank import PokerRank
+from PokerRank import PokerRank, PokerLowRank
 
 ######################################################################
 #
@@ -260,15 +260,15 @@ class PokerGame:
 
     def _findLowHands(self, hands):
 	lowWinners = [ 0 ]
-	bestLowRank = PokerRank.lowRank(hands[0])
+	bestLowRank = PokerLowRank(hands[0])
 	for index in range(1,len(hands)):
-	    rank = PokerRank.lowRank(hands[index])
+	    rank = PokerLowRank(hands[index])
 	    if rank == bestLowRank:
 		lowWinners.append(index)
 	    elif rank < bestLowRank:
 		lowWinners = [index]
 		bestLowRank = rank
-	if self.lowHandEightOrBetter and not bestLowRank.isEightOrBetterLow():
+	if self.lowHandEightOrBetter and not bestLowRank.isEightOrBetter():
 	    # Winner did not qualify for low
 	    return (None, [])
 	return (bestLowRank, lowWinners)

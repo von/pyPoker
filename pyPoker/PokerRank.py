@@ -52,13 +52,18 @@ class PokerRank:
 	"Straight Flush"
 	]
 
-    def __init__(self, hand, ignoreStraights=False,
-		 ignoreFlushes=False, lowRank=False):
+    # Ignore Straights when calculating rank
+    ignoreStraights = False
+
+    # Ignore flushes when calculating rank?
+    ignoreFlushes = False
+
+    # Return lowest rank?
+    lowRank = False
+
+    def __init__(self, hand):
 	assertInstance(hand, Cards)
 	self.hand = hand
-	self.ignoreStraights = ignoreStraights
-	self.ignoreFlushes = ignoreFlushes
-	self.lowRank = lowRank
 	self.rank = None
 	self.primaryCard = None
 	self.secondaryCard = None
@@ -82,15 +87,6 @@ class PokerRank:
 		self.primaryCard = rank.primaryCard
 		self.secondaryCard = rank.secondaryCard
 		self.kickers = rank.kickers
-
-    def lowRank(cls, hand):
-	"""Return best low hand rank (ignoring straights and flushes)."""
-	return cls(hand,
-		   ignoreStraights=True,
-		   ignoreFlushes=True,
-		   lowRank=True)
-
-    lowRank = classmethod(lowRank)
 
     def __createRank(self, rankValue, primaryCard, secondaryCard, kickers):
 	"""Create a new PokerRank object seeded with given parameters,
@@ -227,10 +223,6 @@ class PokerRank:
     def kickersAsString(self):
 	return str(self.kickers)
 
-    def isEightOrBetterLow(self):
-	"""Does rank qualify for eight or better low?"""
-	return (self.rank == PokerRank.HIGH_CARD) and (self.primaryCard <= 8)
-
     def __cmp__(self, other):
 	if other is None:
 	    # Always greater than nothing
@@ -260,3 +252,18 @@ class PokerRank:
 		    raise PokerInternalException("Bad kicker comparison\n" + string)
 	# Truly equal
 	return 0
+
+class PokerLowRank(PokerRank):
+    """Get the lowest poker rank of a hand, ignoring straights and flushes.
+    The lowest possible rank is 5-high (5432A)."""
+    ignoreStraights=True
+    ignoreFlushes=True
+    lowRank=True
+    
+    def __init__(self, hand):
+	PokerRank.__init__(self, hand)
+
+    def isEightOrBetter(self):
+	"""Does rank qualify for eight or better low?"""
+	return (self.rank == PokerRank.HIGH_CARD) and (self.primaryCard <= 8)
+

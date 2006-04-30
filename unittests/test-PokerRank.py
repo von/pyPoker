@@ -8,7 +8,7 @@
 
 from pyPoker.Cards import Rank
 from pyPoker.Hand import Hand, Hands, Board, OmahaHand, HoldEmHand
-from pyPoker.PokerRank import PokerRank
+from pyPoker.PokerRank import PokerRank, PokerLowRank
 import unittest
 
 class TestSequenceFunctions(unittest.TestCase):
@@ -32,17 +32,19 @@ class TestSequenceFunctions(unittest.TestCase):
 
     def testLowRanking(self):
 	"""Verify ranking for low hand."""
-	rank = PokerRank(Hand.fromString("AS 8C 7S 4D 3H"), lowRank=True)
+	rank = PokerLowRank(Hand.fromString("AS 8C 7S 4D 3H"))
 	self.assertEqual(rank, PokerRank.HIGH_CARD, "%s != HIGH_CARD" % rank)
 	self.assertEqual(rank.primaryCard, Rank.EIGHT,
 			 "%s != 8, kickers = %s" % (rank.primaryCard,
 						    rank.kickers))
+	self.assertEqual(rank.isEightOrBetter(), True,
+			 "\"%s\".isEightOrBetter() != True" % rank)
 
     def testRanking(self):
 	"""Test basic hand ranking."""
 	hands = Hands()
 	#
-	# List in ascending order, so that if any hand compares greated than
+	# List in ascending order, so that if any hand compares greater than
 	# a preceding hand, we know there is a problem
 	hands.addHandsFromStrings([
 		# High-card Jack
@@ -129,7 +131,7 @@ class TestSequenceFunctions(unittest.TestCase):
 	hand = OmahaHand.fromString("5D 6H 9H 3C")
 	board = Board.fromString("4H 6C JH KH 8C")
 	hand.setBoard(board)
-	rank = PokerRank.lowRank(hand)
+	rank = PokerLowRank(hand)
 	self.assertEqual(rank, PokerRank.HIGH_CARD, "rank = %s" % rank)
 	self.assertEqual(rank.primaryCard, Rank.EIGHT,
 			 "primaryCard = %s kickers = %s" % (rank.primaryCard,
