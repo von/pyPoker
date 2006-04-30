@@ -51,9 +51,12 @@ class Suit:
 			 HEARTS:"hearts", SPADES:"spades" }
 
     def __init__(self, value):
-	if Suit.suits.count(value) == 0:
-	    raise BadSuitException("Invalud value %d" % value)
-	self.value = value
+	if isinstance(value, Suit):
+	    self.value = value.value
+	else:
+	    if Suit.suits.count(value) == 0:
+		raise BadSuitException("Invalud value %d" % value)
+	    self.value = value
 
     def fromString(string):
 	char = string.upper()
@@ -132,9 +135,12 @@ class Rank:
     acesLow = False
 
     def __init__(self, value):
-	if Rank.ranks.count(value) == 0:
-	    raise BadRankException("Invalid value %d" % value)
-	self.value = value
+	if isinstance(value, Rank):
+	    self.value = value.value
+	else:
+	    if Rank.ranks.count(value) == 0:
+		raise BadRankException("Invalid value %d" % value)
+	    self.value = value
 
     def fromString(string):
 	char = string.upper()

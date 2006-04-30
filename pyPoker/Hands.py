@@ -77,14 +77,25 @@ class HoldEmHands(Hands):
 					    suitedChar)
 	else:
 	    raise BadHandGroupException("Invalid hand string \"%s\"" % handStr)
-	if suited:
+	if rank1 == rank2:
+	    self.addPair(rank1)
+	elif suited:
 	    self.addSuitedHands(rank1, rank2)
 	else:
 	    self.addUnsuitedHands(rank1, rank2)
 
+    def fromGroups(cls, *strings):
+	hands = cls()
+	for string in strings:
+	    hands.addHandGroup(string)
+	return hands
+
+    fromGroups = classmethod(fromGroups)
+
     def addSuitedHands(self, rank1, rank2):
 	for suit in Suit.suits:
-	    self.append(HoldEmHand([Card((rank1, suit)), Card((rank2, suit))]))
+	    self.append(HoldEmHand([Card((rank1, suit)),
+				    Card((rank2, suit))]))
 
     def addUnsuitedHands(self, rank1, rank2):
 	for suit1 in Suit.suits:

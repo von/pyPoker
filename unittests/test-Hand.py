@@ -7,7 +7,7 @@
 ######################################################################
 
 from pyPoker.Cards import Card, Suit, Rank
-from pyPoker.Hand import Hand, Hands, Board, OmahaHand, HoldEmHand
+from pyPoker.Hand import Hand, Board, OmahaHand, HoldEmHand
 import unittest
 
 class TestSequenceFunctions(unittest.TestCase):

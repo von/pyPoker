@@ -11,7 +11,8 @@
 
 from PokerException import PokerException
 from Cards import Cards, Card, Suit, Rank
-from Hand import Hand, Hands
+from Hand import Hand
+from Hands import Hands
 
 ######################################################################
 #

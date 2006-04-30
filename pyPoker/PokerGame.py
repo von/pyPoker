@@ -10,7 +10,8 @@
 ######################################################################
 
 from PokerException import PokerException
-from Hand import Hand, Hands, CommunityCardHand, HoldEmHand, FiveCardStudHand, OmahaHand
+from Hand import Hand, CommunityCardHand, HoldEmHand, FiveCardStudHand, OmahaHand
+from Hands import Hands
 from Cards import Cards
 from Deck import Deck
 from Utils import assertInstance

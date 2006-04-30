@@ -7,7 +7,8 @@
 ######################################################################
 
 from pyPoker.Cards import Rank
-from pyPoker.Hand import Hand, Hands, Board, OmahaHand, HoldEmHand
+from pyPoker.Hand import Hand, Board, OmahaHand, HoldEmHand
+from pyPoker.Hands import Hands
 from pyPoker.PokerRank import PokerRank, PokerLowRank
 import unittest
 

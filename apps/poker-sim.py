@@ -11,7 +11,8 @@ from optparse import OptionParser
 import sys
 import string
 from pyPoker.PokerGame import PokerGame, HoldEmGame, FiveCardStudHiLoGame, OmahaGame, OmahaHiLoGame
-from pyPoker.Hand import Hand, Hands, Board
+from pyPoker.Hand import Hand, Board
+from pyPoker.Hands import Hands
 
 ######################################################################
 #
