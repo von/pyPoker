@@ -94,7 +94,6 @@ class Suit:
 	# Must be int
 	return cmp(self.value, other)
 
-
 ######################################################################
 
 

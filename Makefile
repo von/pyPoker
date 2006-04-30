@@ -26,6 +26,7 @@ $(APP_SIMS):
 # List in order to be tested
 UNITTESTS = test-Cards \
 	test-Hand \
+	test-Hands \
 	test-PokerRank \
 	test-PokerGame
 
