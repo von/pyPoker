@@ -10,7 +10,7 @@
 ######################################################################
 
 from PokerException import PokerException
-from Hand import Hand, HoldEmHand
+from Hand import Hand
 from Deck import Deck
 
 ######################################################################
@@ -29,24 +29,21 @@ class HandGenerationException(PokerException):
 
 class HandGenerator:
     """Given an array of possible hands, this class generates one of these hands randomly when requested."""
-    def __init__(self, handType, hands=None, deck=None, name = None):
-	"""handType should be a class for the type of hands to be generated.
 
-	hands should be an array of Cards representing valid hands that
-	can be generated.
+    # Type of hand generated
+    handClass = Hand
 
-	deck is optional. If not None, then it represents a deck that the
-	generated hands should be drawn from.
+    def __init__(self, hands=None):
+	"""Arguments: [hands, [name]]
+
+	hands should be an array of Cards or Hands representing valid
+	hands that can be generated.
 	"""
-	self.handType = handType
 	self.hands = []
+	self.totalPercentage = 0
+	self.name = None
 	if hands:
-	    self.hands.append((100, hands))
-	    self.totalPercentage = 100
-	else:
-	    self.totalPercentage = 0
-	self.deck = deck
-	self.name = name
+	    self.addHands(hands)
 
     def generateHand(self, deck=None):
 	"""Generate a hand.
@@ -55,10 +52,8 @@ class HandGenerator:
 	from random import choice, shuffle
 	hands = self._pickHands()
 	if deck is None:
-	    deck = self.deck
-	if deck is None:
 	    # No deck to constrian choices, just pick a hand at random
-	    hand = self.handType(cards = choice(hands))
+	    hand = self.handClass(cards = choice(hands))
 	else:
 	    # We need to ensure our choice can be drawn from the deck
 	    # Put hands in random order and try in sequence
@@ -66,7 +61,7 @@ class HandGenerator:
 	    for h in hands:
 		if deck.cardsInDeck(h):
 		    deck.removeCards(h)
-		    hand = self.handType(cards = h)
+		    hand = self.handClass(cards = h)
 		    break
 	    else:
 		raise HandGenerationException("Couldn't find hand in deck.")
@@ -93,8 +88,11 @@ class HandGenerator:
 		return hands
 	    total += percent
 	# Should never get here
-	raise PokerInternalException("Didn't match a hand")
-	
+	raise HandGenerationException("Didn't match a hand.")
+
+    def setName(self, name):
+	self.name = name
+
     def __str__(self):
 	if self.name:
 	    return self.name
@@ -107,7 +105,6 @@ class HandGenerator:
 	    print "%d%%: %s" % (per, hand)
 
 class HoldEmHandGenerator(HandGenerator):
-    def __init__(self, hands = None, deck = None, name = None):
-	HandGenerator.__init__(self, HoldEmHand,
-			       hands=hands, deck=deck,
-			       name=name)
+    from Hand import HoldEmHand
+    handClass = HoldEmHand
+

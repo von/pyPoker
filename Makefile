@@ -7,16 +7,26 @@ test: unittests apptests
 # app-tests
 #
 
-APP_SIMS= holdem \
+GAME_SIMS= holdem \
 	omaha \
 	omahahilo \
 	fivecardstudhilo
 
-apptests: $(APP_SIMS)
+OTHER_APPS= holdem-best-hand
 
-$(APP_SIMS):
+apptests: game-sims $(OTHER_APPS) sha
+
+game-sims: $(GAME_SIMS)
+
+$(GAME_SIMS):
 	@echo "Running $@ simulation:"
-	@$(EXEC_PY) apps/poker-sim.py -g $@
+	@$(EXEC_PY) apps/poker-sim.py -p -g $@ -P profile/$@.pstats
+
+$(OTHER_APPS):
+	@$(EXEC_PY) apps/$@.py
+
+sha:
+	@$(EXEC_PY) apps/sha.py -v apps/sha-input
 
 ######################################################################
 #
@@ -28,6 +38,7 @@ UNITTESTS = test-Cards \
 	test-Hand \
 	test-Hands \
 	test-PokerRank \
+	test-HandGenerator \
 	test-PokerGame
 
 unittests: $(UNITTESTS)
@@ -35,13 +46,4 @@ unittests: $(UNITTESTS)
 $(UNITTESTS):
 	@echo "$@:"
 	@$(EXEC_PY) unittests/$@.py
-
-######################################################################
-#
-# profiles
-#
-
-profile-holdem:
-	@$(EXEC_PY) profile/$@.py
-
 

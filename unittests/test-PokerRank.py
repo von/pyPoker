@@ -31,7 +31,7 @@ class TestSequenceFunctions(unittest.TestCase):
 	rank = PokerRank(hand)
 	self.assertEqual(rank, PokerRank.STRAIGHT, "rank = %s" % rank)
 
-    def testLowRanking(self):
+    def testBasicLowRanking(self):
 	"""Verify ranking for low hand."""
 	rank = PokerLowRank(Hand.fromString("AS 8C 7S 4D 3H"))
 	self.assertEqual(rank, PokerRank.HIGH_CARD, "%s != HIGH_CARD" % rank)
@@ -114,6 +114,77 @@ class TestSequenceFunctions(unittest.TestCase):
 				     ( i, hands[i], ranks[i],
 				       j, hands[j], ranks[j]))
 			    
+    def testLowRanking(self):
+	"""Test basic low hand ranking."""
+	hands = Hands()
+	#
+	# List in ascending order, so that if any hand compares greater than
+	# a preceding hand, we know there is a problem
+	hands.addHandsFromStrings([
+		# Wheel
+		"5S 4C 3D 2C AS",
+		# Ten-high
+		"TS 9C 8D 7C 6S",
+		# Jack-high
+		"AS JS TS 7S 3S",
+		# High-card Jack
+		"JC TS 9D 6H 2C",
+		# High-card King
+		"KC TS 9D 6H 2C",
+		# King-high
+		"KS JS TS 7S 3S",
+		# King-high
+		"AS KC QD JC TS",
+		# King-high
+		"KS QS JS TS 9S",
+		# Pair of aces
+		"AS AC 8D 3C 2S",
+		# Pair of queens
+		"QS QC 8D 3C 2S",
+		# Aces and eights
+		"AS AC 8D 8C 2S",
+		# Queens and Jacks
+		"QS QC JD JC 2S",
+		# Queens and Jacks, higher kicker
+		"QS QC JD JC 3S",
+		# Trip Aces
+		"AS AC AD 8C 2S",
+		# Trip Fours
+		"QS 9D 4S 4H 4D",
+		# Trip Tens
+		"JC TS TC TD 2S",
+		# Aces full of sevens
+		"AS AC AD 7C 7S",
+		# Aces full of eights
+		"AS AC AD 8C 8S",
+		# Kings full of jacks
+		"KS KC KD JC JS",
+		# Quad aces
+		"AS AC AD AH 8S",
+		# Quad aces, higher kicker
+		"AS AC AD AH TS",
+		# Quad threes
+		"9S 3S 3C 3D 3H"])
+
+
+	ranks = [PokerLowRank(hand) for hand in hands]
+	for i in range(len(hands)):
+	    for j in range(len(hands)):
+		if (i < j):
+		    self.assert_(ranks[i] < ranks[j],
+				 "!(%d) %s (%s) < (%d) %s (%s)" %
+				 ( i, hands[i], ranks[i],
+				   j, hands[j], ranks[j]))
+		elif (i > j):
+		    self.assert_(ranks[i] > ranks[j],
+				 "!(%d) %s (%s) > (%d) %s (%s)" %
+				 ( i, hands[i], ranks[i],
+				   j, hands[j], ranks[j]))
+		else:
+		    self.assertEqual(ranks[i], ranks[j],
+				     "(%d) %s (%s) != (%d) %s (%s)" %
+				     ( i, hands[i], ranks[i],
+				       j, hands[j], ranks[j]))
 				 
     def testOmaha(self):
 	"""Test basic Omaha hand ranking."""

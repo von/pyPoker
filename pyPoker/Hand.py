@@ -71,6 +71,12 @@ class Hand(Cards):
 
     getMaxCards = classmethod(getMaxCards)
 
+    def numCards(self):
+	if self.board:
+	    return len(self) + len(self.board)
+	else:
+	    return len(self)
+
     def append(self, card):
 	"""Append while checking to be sure maxCards is not exceeded."""
 	if self.maxCards and (len(self) == self.maxCards):
@@ -96,13 +102,12 @@ class Hand(Cards):
 	import copy
 	return copy.copy(self)
 
-    def getSuitedCards(self, suit):
-	"""Return an array of all cards of the given suit."""
-	suitedCards = Cards()
-	for card in self:
-	    if card.suit == suit:
-		suitedCards.append(card)
-	return suitedCards
+    def hands(self):
+	"""Return all sets of cards that can be constructed from hand."""
+	cards = Cards(self)
+	if self.board:
+	    cards.extend(self.board)
+	yield cards
 
     def combinations(self, n):
 	"""Generator function return all combinations of n cards (including
@@ -112,6 +117,15 @@ class Hand(Cards):
 	if self.board:
 	    cards.extend(self.board)
 	return Cards.combinations(cards, n)
+
+    def eq(self, otherHand):
+	"""Are two hands identical (including suits)?"""
+	if len(self) != len(otherHand):
+	    return False
+	for index in range(len(self)):
+	    if self[index].eq(otherHand[index]):
+		return False
+	return True
 
 ######################################################################
 #
@@ -245,6 +259,15 @@ class OmahaHand(CommunityCardHand):
 	cards should be None or an array of up to four cards.
 	board should be a Board object."""
 	CommunityCardHand.__init__(self, cards, board = board)
+
+    def hands(self):
+	"""Return all sets of cards that can be constructed from hand."""
+	holeCards = self.getHoleCards()
+	for holeCombo in holeCards.combinations(2):
+	    combo = holeCombo.copy()
+	    if self.board:
+		combo.extend(self.board)
+	    yield combo
 
     def combinations(self, n):
 	"""Generator function return all combinations of n cards (including

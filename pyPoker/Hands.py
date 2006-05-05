@@ -10,6 +10,7 @@
 from PokerException import PokerException
 from Hand import Hand, HoldEmHand
 from Cards import Card, Suit, Rank
+from Utils import assertInstance
 
 ######################################################################
 
@@ -48,8 +49,15 @@ class Hands(list):
     def __str__(self):
 	s =""
 	for hand in self:
-	    s += str(hand) + ":"
-	return s.rstrip(':')
+	    s += str(hand) + ", "
+	return s.rstrip(', ')
+
+    def containsHand(self, hand):
+	"""Does hands object contain the given hand?"""
+	for h in self:
+	    if hand.eq(h):
+		return True
+	return False
 
 ######################################################################
 
@@ -62,6 +70,7 @@ class HoldEmHands(Hands):
 	K4 - all unsuited combinations of K4.
 	K4s - all suited combinations of K4.
 	"""
+	assertInstance(string, str)
 	if len(string) == 2:
 	    rank1 = Rank.fromString(string[0])
 	    rank2 = Rank.fromString(string[1])
@@ -73,10 +82,11 @@ class HoldEmHands(Hands):
 	    if suitedChar == 's':
 		suited = True
 	    else:
-		raise BadHandGroupException("Invalid suited character \"%s\"" %
+		raise InvalidHandTypeException("Invalid suited character \"%s\"" %
 					    suitedChar)
 	else:
-	    raise BadHandGroupException("Invalid hand string \"%s\"" % handStr)
+	    raise InvalidHandTypeException("Invalid hand string \"%s\"" % 
+					   string)
 	if rank1 == rank2:
 	    self.addPair(rank1)
 	elif suited:

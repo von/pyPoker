@@ -1,0 +1,17 @@
+#[board]
+#cards: 7C 8C 9C
+
+[hand1]
+78s: 75%
+class2: 25%
+
+[hand2]
+AA: 33%
+KK: 33%
+QQ: 34%
+
+[hand3]
+22: 100%
+
+[hand4]
+JTs: 100%

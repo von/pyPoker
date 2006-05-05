@@ -16,6 +16,7 @@ from Cards import Cards
 from Deck import Deck
 from Utils import assertInstance
 from PokerRank import PokerRank, PokerLowRank
+from HandGenerator import HandGenerator
 
 ######################################################################
 #
@@ -24,14 +25,6 @@ from PokerRank import PokerRank, PokerLowRank
 
 class PokerGameStateException(PokerException):
     """Error in state for game simulation."""
-    pass
-
-######################################################################
-#
-# Temporary hack
-#
-
-class HandGenerator:
     pass
 
 ######################################################################
@@ -46,9 +39,10 @@ class PokerGame:
     # Support for board here, but don't allow setting in this class
     board = None
 
-    # Winning hands: high, low or both?
-    highHandsWin = True
-    lowHandsWin = False
+    # Class to use to determine rank for hi and/or low
+    # If == None then no winner in that direction.
+    highHandRankClass = PokerRank
+    lowHandRankClass = None
 
     # Low hand must be eight or berrer?
     lowHandEightOrBetter = False
@@ -91,6 +85,11 @@ class PokerGame:
 	self.deck = Deck()
 	self.numHands = numHands
 	self.hands = Hands()
+	self.lowHandsWin = (self.lowHandRankClass != None)
+	self.highHandsWin = (self.highHandRankClass != None)
+	self.highWins = []
+	self.lowWins = []
+	self.scoops = []
 	if hands:
 	    self.addHands(hands)
 
@@ -103,6 +102,16 @@ class PokerGame:
 	if self.lowHandsWin and self.highHandsWin:
 	    self.scoops = [ 0 ] * numHands
 	self.gameNum = 0
+
+    def __checkStatArrays(self):
+	"""Make sure all the statistic arrays are long enough.
+	In case a hand was added since we last simualted a game."""
+	if len(self.highWins) < len(self.hands):
+	    self.highWins.extend([ 0 ] * (len(self.hands)-len(self.highWins)))
+	if len(self.lowWins) < len(self.hands):
+	    self.lowWins.extend([ 0 ] * (len(self.hands)-len(self.lowWins)))
+	if len(self.scoops) < len(self.hands):
+	    self.scoops.extend([ 0 ] * (len(self.hands)-len(self.scoops)))
 
     def getHandClass(cls):
 	return cls.handClass
@@ -117,24 +126,17 @@ class PokerGame:
 	for hand in hands:
 	    if hand is None:
 		self.hands.addHand(self.handClass())
-	    elif isinstance(hand, HandGenerator):
-		self.hands.addHand(hand)
 	    else:
 		self.hands.addHand(hand)
 		self.deck.removeCards(hand)
-	# If we already have statistics, then extend win arrays to match
-	# length of new array of hands
-	if self.gameNum > 0:
-	    if self.highHandsWin:
-		self.highWins.extend([ 0 ] * len(hands))
-	    if self.lowHandsWin:
-		self.lowWins.extend([ 0 ] * len(hands))
-	    if self.highHandsWin and self.lowHandsWin:
-		self.scoops.extend([ 0 ] * len(hands))
 				     
     def addHand(self, hand):
-	assertInstance(hand, [Hand, HandGenerator])
+	assertInstance(hand, Hand)
 	self.addHands(hand)
+
+    def addHandGenerator(self, hg):
+	assertInstance(hg, HandGenerator)
+	self.hands.addHand(hg)
 
     def getNumHands(self):
 	return max(self.numHands, len(self.hands))
@@ -194,7 +196,7 @@ class PokerGame:
 	assertInstance(numGames, int)
 	if self.getNumHands() == 0:
 	    raise PokerGameStateException("Zero hands defined.")
-	if resetStats or self.gameNum == 0:
+	if resetStats:
 	    self.resetStats()
 	while self.gameNum < numGames:
 	    self.simulateGame()
@@ -205,6 +207,7 @@ class PokerGame:
 		    callback(self)
 
     def simulateGame(self):
+	self.__checkStatArrays()
 	self.gameNum += 1
 	# Make a copy of deck, hands and board
 	deck = self.deck.copy()
@@ -232,7 +235,7 @@ class PokerGame:
 	    self.lastGameBoard = board
 	self.lastGameHands = hands
 	# Find winning hands
-	if self.highHandsWin is True:
+	if self.highHandsWin:
 	    (bestHighRank, highWinners) = self._findHighHands(hands)
 	    self.lastGameHighWinners = highWinners
 	    self.lastGameHighRank = bestHighRank
@@ -249,9 +252,9 @@ class PokerGame:
 
     def _findHighHands(self, hands):
 	highWinners = [ 0 ]
-	bestHighRank = PokerRank(hands[0])
+	bestHighRank = self.highHandRankClass(hands[0])
 	for index in range(1,len(hands)):
-	    rank = PokerRank(hands[index])
+	    rank = self.highHandRankClass(hands[index])
 	    if rank == bestHighRank:
 		highWinners.append(index)
 	    elif rank > bestHighRank:
@@ -261,9 +264,9 @@ class PokerGame:
 
     def _findLowHands(self, hands):
 	lowWinners = [ 0 ]
-	bestLowRank = PokerLowRank(hands[0])
+	bestLowRank = self.lowHandRankClass(hands[0])
 	for index in range(1,len(hands)):
-	    rank = PokerLowRank(hands[index])
+	    rank = self.lowHandRankClass(hands[index])
 	    if rank == bestLowRank:
 		lowWinners.append(index)
 	    elif rank < bestLowRank:
@@ -306,7 +309,29 @@ class PokerGame:
 		    s += str(scooper + 1) + " "
 	s.strip()
 	return s
-	    
+
+    def statsToString(self):
+	s = ""
+	for hand in range(self.getNumHands()):
+	    if hand >= len(self.hands):
+		handStr = "XX " * self.handClass.getMaxCards()
+		s += handStr
+	    else:
+		s += str(self.hands[hand]) + " "
+	    if self.highHandsWin:
+		wins = self.highWins[hand]
+		s += "High wins %4d (%6.2f%%)" % (
+		    wins,
+		    100.0 * wins / self.gameNum)
+	    if self.lowHandsWin:
+		wins = self.lowWins[hand]
+		s += " Low wins %4d (%6.2f%%)" % (
+		    wins,
+		    100.0 * wins / self.gameNum)
+	    if self.highHandsWin and self.lowHandsWin:
+		s += " Scoops: %d" % self.scoops[hand]
+	    s += "\n"
+	return s
 
 class CommunityCardPokerGame(PokerGame):
     handClass = CommunityCardHand
@@ -322,14 +347,12 @@ class HoldEmGame(CommunityCardPokerGame):
 
 class FiveCardStudHiLoGame(PokerGame):
     handClass = FiveCardStudHand
-    highHandsWin = True
-    lowHandsWin = True
+    lowHandRankClass = PokerLowRank
 
 class OmahaGame(CommunityCardPokerGame):
     handClass = OmahaHand
 
 class OmahaHiLoGame(OmahaGame):
-    highHandsWin = True
-    lowHandsWin = True
+    lowHandRankClass = PokerLowRank
     lowHandEightOrBetter = True
 

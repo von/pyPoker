@@ -10,8 +10,9 @@
 ######################################################################
 
 from PokerException import PokerException
-from Cards import Card, Cards, Rank
-from Utils import assertInstance
+from Cards import Card, Cards, Rank, Suit
+from Hand import CommunityCardHand
+from Utils import assertInstance, rindex
     
 ######################################################################
 #
@@ -33,12 +34,15 @@ class PokerRank:
     PAIR = 1
     TWO_PAIR = 2
     THREE_OF_A_KIND = 3
-    TRIPS = 3
     STRAIGHT = 4
     FLUSH = 5
     FULL_HOUSE = 6
     FOUR_OF_A_KIND = 7
     STRAIGHT_FLUSH = 8
+
+    TRIPS = THREE_OF_A_KIND
+    BOAT = FULL_HOUSE
+    QUADS = FOUR_OF_A_KIND
 
     handRankStrings = [
 	"High Card",
@@ -72,8 +76,11 @@ class PokerRank:
 	    Rank.acesAreLow()
 	else:
 	    Rank.acesAreHigh()
-	for cards in hand.combinations(5):
-	    rank = self.__getRank(cards)
+	for cards in hand.hands():
+	    if self.lowRank:
+		rank = self.__getLowRank(cards)
+	    else:
+		rank = self.__getRankFromSevenCards(cards)
 	    replace = False
 	    if self.rank is None:
 		replace = True
@@ -197,6 +204,186 @@ class PokerRank:
 	return self.__createRank(PokerRank.HIGH_CARD, cards[0].rank,
 				 None, cards[1:])
 
+    def __getRankFromSevenCards(self, cards):
+	cards.sort()
+	straight = cards.findStraight()
+	# Check for straight flush
+	if (len(straight) >= 5) and straight.sameSuit():
+	    return self.__createRank(PokerRank.STRAIGHT_FLUSH,
+				     Rank(straight[0].rank),
+				     None,
+				     straight[1:5])
+	rankCount = cards.countRanks()
+	# Check for four of a kind
+	try:
+	    primaryRank = rindex(rankCount, 4)
+	except:
+	    pass
+	else:
+	    cards.removeRank(primaryRank)
+	    return self.__createRank(PokerRank.FOUR_OF_A_KIND,
+				     Rank(primaryRank),
+				     None,
+				     cards[0:1])
+	# Check for full house
+	count = rankCount.count(3)
+	if count > 1:
+	    primaryRank = rindex(rankCount, 3)
+	    # Set that value to zero so we can find second value
+	    rankCount[primaryRank] = 0
+	    secondaryRank = rindex(rankCount, 3)
+	    return self.__createRank(PokerRank.FULL_HOUSE,
+				     Rank(primaryRank),
+				     Rank(secondaryRank),
+				     None)
+	elif count == 1:
+	    try:
+		secondaryRank = rindex(rankCount, 2)
+	    except:
+		pass
+	    else:
+		primaryRank = rindex(rankCount, 3)
+		return self.__createRank(PokerRank.FULL_HOUSE,
+					 Rank(primaryRank),
+					 Rank(secondaryRank),
+					 None)
+	# Check for flush
+	for suit in Suit.suits:
+	    if cards.suitCount(suit) >= 5:
+		suitedCards = cards.suitedCards(suit)
+		topCard = suitedCards.pop(0)
+		primaryRank = topCard.rank
+		return self.__createRank(PokerRank.FLUSH,
+					 Rank(primaryRank),
+					 None,
+					 suitedCards[:4])
+	# Check for straight
+	if len(straight) >= 5:
+	    return self.__createRank(PokerRank.STRAIGHT,
+				     Rank(straight[0].rank),
+				     None,
+				     None)
+	# Check for trips
+	try:
+	    primaryRank = rindex(rankCount, 3)
+	except:
+	    pass
+	else:
+	    cards.removeRank(primaryRank)
+	    return self.__createRank(PokerRank.THREE_OF_A_KIND,
+				     Rank(primaryRank),
+				     None,
+				     cards[0:2])
+	# Check for two pair and pair
+	pairCount = rankCount.count(2)
+	if pairCount > 1:
+	    # Two pair
+	    primaryRank = rindex(rankCount, 2)
+	    # Remove so we can find second pair
+	    rankCount[primaryRank] = 0
+	    secondaryRank = rindex(rankCount, 2)
+	    cards.removeRank(primaryRank)
+	    cards.removeRank(secondaryRank)
+	    return self.__createRank(PokerRank.TWO_PAIR,
+				     Rank(primaryRank),
+				     Rank(secondaryRank),
+				     cards[0:1])
+	elif pairCount == 1:
+	    primaryRank = rankCount.index(2)
+	    cards.removeRank(primaryRank)
+	    return self.__createRank(PokerRank.PAIR,
+				     Rank(primaryRank),
+				     None,
+				     cards[0:3])
+	# High card
+	primaryRank = cards.pop(0).rank
+	return self.__createRank(PokerRank.HIGH_CARD,
+				 Rank(primaryRank),
+				 None,
+				 cards[0:4])
+
+    def __getLowRank(self, cards):
+	"""Find lowest rank of given cards ignoring straights and flushes."""
+	cards.sort()
+	# Find the lowest five cards
+	# Add each lowest card that doesn't pair to our created array.
+	# If we don't get five start then with the lowest that pairs, then
+	# the lowest that forms trips, etc.
+	countLevel = 1
+	lowestCards = Cards()
+	remainingCards = Cards()
+	while len(lowestCards) < 5:
+	    if len(cards) == 0:
+		# Didn't find enough, so now get cards that match cards
+		# in lowestCards (or match pairs in lowestCards and so on)
+		cards = remainingCards
+		remainingCards = Cards()
+		countLevel += 1
+	    card = cards.pop()
+	    if lowestCards.rankCount(card.rank) < countLevel:
+		lowestCards.insert(0, card)
+	    else:
+		remainingCards.insert(0, card)
+	# Ok, lowestCards now contain five lowest cards
+	if countLevel == 1:
+	    # We didn't have to pair, so it's a high card
+	    primaryRank = lowestCards.pop(0).rank
+	    return self.__createRank(PokerRank.HIGH_CARD,
+				     Rank(primaryRank),
+				     None,
+				     lowestCards)
+	elif countLevel == 2:
+	    # We have at least one pair. Do we have two pair?
+	    rankCount = lowestCards.countRanks()
+	    if rankCount.count(2) == 2:
+		primaryRank = rindex(rankCount, 2)
+		secondaryRank = rankCount.index(2)
+		lowestCards.removeRank(primaryRank)
+		lowestCards.removeRank(secondaryRank)
+		return self.__createRank(PokerRank.TWO_PAIR,
+					 Rank(primaryRank),
+					 Rank(secondaryRank),
+					 lowestCards)
+	    else:
+		# Just a single pair
+		primaryRank = rankCount.index(2)
+		lowestCards.removeRank(primaryRank)
+		return self.__createRank(PokerRank.PAIR,
+					 Rank(primaryRank),
+					 None,
+					 lowestCards)
+	elif countLevel == 3:
+	    # We have at least trips or maybe a full house
+	    rankCount = lowestCards.countRanks()
+	    if rankCount.count(2) == 1:
+		primaryRank = rankCount.index(3)
+		secondaryRank = rankCount.index(2)
+		return self.__createRank(PokerRank.FULL_HOUSE,
+					 Rank(primaryRank),
+					 Rank(secondaryRank),
+					 None)
+	    else:
+		# Just trips
+		primaryRank = rankCount.index(3)
+		lowestCards.removeRank(primaryRank)
+		return self.__createRank(PokerRank.TRIPS,
+					 Rank(primaryRank),
+					 None,
+					 lowestCards)
+	else:
+	    # We've got quads
+	    rankCount = lowestCards.countRanks()
+	    primaryRank = rankCount.index(4)
+	    lowestCards.removeRank(primaryRank)
+	    return self.__createRank(PokerRank.QUADS,
+				     Rank(primaryRank),
+				     None,
+				     lowestCards)
+
+    def __getLowestFiveCards(self, cards):
+	"""Return lowest five cards ignoring straights and flushes."""
+	
+	    
     def __str__(self):
 	if self.rank == PokerRank.HIGH_CARD:
 	    return "High card %s" % self.primaryCard.longString()
@@ -267,3 +454,30 @@ class PokerLowRank(PokerRank):
 	"""Does rank qualify for eight or better low?"""
 	return (self.rank == PokerRank.HIGH_CARD) and (self.primaryCard <= 8)
 
+class HoldEmStartingHandRank(PokerRank):
+    """Get the rank of two starting cards in HoldEmHand."""
+    
+    def __init__(self, hand):
+	from Hand import HoldEmHand
+	assertInstance(hand, HoldEmHand)
+	if len(hand) != 2:
+	    raise IncompleteHandException("Need 2 cards in hand, have %d" % len(hand))
+	self.rank = None
+	self.primaryCard = None
+	self.secondaryCard = None
+	self.kickers = None
+	if hand[0] == hand[1]:
+	    # Pair
+	    self.rank = PokerRank.PAIR
+	    self.primaryCard = hand[0]
+	else:
+	    # Two unpaired cards, find higher
+	    self.rank = PokerRank.HIGH_CARD
+	    if hand[0] > hand[1]:
+		self.primaryCard = hand[0]
+		self.kickers = [hand[1]]
+	    else:
+		self.primaryCard = hand[1]
+		self.kickers = [hand[0]]
+
+					  

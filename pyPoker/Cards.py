@@ -138,6 +138,8 @@ class Rank:
 	if isinstance(value, Rank):
 	    self.value = value.value
 	else:
+	    if value == self.ACE_LOW:
+		value = self.ACE
 	    if Rank.ranks.count(value) == 0:
 		raise BadRankException("Invalid value %d" % value)
 	    self.value = value
@@ -202,6 +204,9 @@ class Rank:
 
     def __add__(self, value):
 	return Rank(self.value + value)
+
+    def __sub__(self, value):
+	return Rank(self.value - value)
 
 ######################################################################
 
@@ -318,25 +323,8 @@ class Cards(list):
 
     def combinations(self, n):
 	"""Generator function returning all combinations of n cards."""
-	assertInstance(n, int)
-	if n > len(self):
-	    raise NotEnoughCardsException("Cannot generate %d cards from only %d cards" % (n, len(self)))
-	if n == 0:
-	    yield Cards()
-	elif n == 1:
-	    for card in self:
-		c = Cards()
-		c.append(card)
-		yield c
-	elif n == len(self):
-	    # Optimization
-	    yield self.copy()
-	else:
-	    for index in xrange(len(self) - n + 1):
-		remainder = self[index+1:]
-		for subComb in remainder.combinations(n-1):
-		    subComb.append(self[index])
-		    yield subComb
+	from Utils import combinations
+	return combinations(self, n)
  
     def sameSuit(self):
 	"""Are all cards the same suit?"""
@@ -345,6 +333,67 @@ class Cards(list):
 		return False
 	return True
 
+    def suitedCards(self, suit):
+	"""Return cards of given suit."""
+	cards = Cards()
+	for card in self:
+	    if card.suit == suit:
+		cards.append(card)
+	return cards
+
+    def rankCount(self, rank):
+	"""Return number of cards of given rank."""
+	count = 0
+	for card in self:
+	    if card.rank == rank:
+		count += 1
+	return count
+
+    def countRanks(self):
+	"""Return an array containing a count of how often each rank appears."""
+	count = [0] * (Rank.ACE + 1)
+	for rank in range(Rank.ACE, Rank.TWO-1, -1):
+	    count[rank] = self.rankCount(rank)
+	return count
+
+    def removeRank(self, rank):
+	"""Remove all cards matching rank."""
+	index = 0
+	while index < len(self):
+	    if self[index].rank == rank:
+		del self[index]
+		continue
+	    index += 1
+
+    def suitCount(self, suit):
+	"""Return number of cards of given suit."""
+	count = 0
+	for card in self:
+	    if card.suit == suit:
+		count += 1
+	return count
+
+    def findStraight(self):
+	if len(self) == 0:
+	    raise NotEnoughCardsException("Zero cards in hand.")
+	longestStraight = Cards()
+	straight = Cards()
+	straight.append(self[0])
+	for index in range(1,len(self)):
+	    if self[index].rank != (straight[len(straight)-1].rank - 1):
+		if len(straight) > len(longestStraight):
+		    longestStraight = straight
+		straight = Cards()
+	    straight.append(self[index])
+	if len(straight) > len(longestStraight):
+	    longestStraight = straight
+	# Check for special case of straight ending with a 2 when we have
+	# and Ace, in which case treat the ace as low.
+	if ((longestStraight[len(longestStraight)-1].rank == Rank.TWO) and
+	    (self[0].rank == Rank.ACE)):
+	    longestStraight.append(self[0])
+	return longestStraight
+	
     def consecutivelyDescending(self):
 	"""Are cards consecutively descending? Used for straight testing.
 	If there is only one card in the array, returns True."""

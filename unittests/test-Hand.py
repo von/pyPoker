@@ -63,5 +63,9 @@ class TestSequenceFunctions(unittest.TestCase):
 	    self.assertEquals(len(combs), 5)
 	self.assertEquals(count, 21)
 
+    def testBoardToString(self):
+	board = Board.fromString("7C 8C 9C")
+	self.assertEqual("%s" % board, "7C 8C 9C xx xx")
+
 if __name__ == "__main__":
     unittest.main()
