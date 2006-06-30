@@ -236,21 +236,21 @@ class PokerGame:
 	self.lastGameHands = hands
 	# Find winning hands
 	if self.highHandsWin:
-	    (bestHighRank, highWinners) = self._findHighHands(hands)
+	    (bestHighRank, highWinners) = self._findHighHands(hands, board)
 	    self.lastGameHighWinners = highWinners
 	    self.lastGameHighRank = bestHighRank
 	    for winner in highWinners:
 		self.highWins[winner] += 1
 	if self.lowHandsWin is True:
-	    (bestLowRank, lowWinners) = self._findLowHands(hands)
+	    (bestLowRank, lowWinners) = self._findLowHands(hands, board)
 	    self.lastGameLowWinners = lowWinners
 	    self.lastGameLowRank = bestLowRank
 	    for winner in lowWinners:
 		self.lowWins[winner] += 1
 	if self.lowHandsWin and self.highHandsWin:
-	    self.lastGameScoopers = self._findScoopers(lowWinners, highWinners)
+	    self.lastGameScooper = self._findScooper(lowWinners, highWinners)
 
-    def _findHighHands(self, hands):
+    def _findHighHands(self, hands, board):
 	highWinners = [ 0 ]
 	bestHighRank = self.highHandRankClass(hands[0])
 	for index in range(1,len(hands)):
@@ -262,28 +262,40 @@ class PokerGame:
 		bestHighRank = rank
 	return (bestHighRank, highWinners)
 
-    def _findLowHands(self, hands):
-	lowWinners = [ 0 ]
-	bestLowRank = self.lowHandRankClass(hands[0])
-	for index in range(1,len(hands)):
-	    rank = self.lowHandRankClass(hands[index])
-	    if rank == bestLowRank:
-		lowWinners.append(index)
-	    elif rank < bestLowRank:
+    def _findLowHands(self, hands, board):
+	if self.lowHandEightOrBetter and (board is not None):
+	    # See if low is possible given board
+	    if board.eightLowPossible() is False:
+		# Nope, don't bother checking for low hands
+		return (None, [])
+	bestLowRank = None
+	lowWinners = []
+	for index in range(len(hands)):
+	    hand = hands[index]
+	    if (self.lowHandEightOrBetter and
+		(hand.eightLowPossible() is False)):
+		# Hand cannot qualify for low, don't bother checking
+		continue
+	    rank = self.lowHandRankClass(hand)
+	    if (self.lowHandEightOrBetter and
+		(not rank.isEightOrBetter())):
+		# Hand did not qualify for low
+		continue
+	    if ((bestLowRank is None) or
+		(rank < bestLowRank)):
 		lowWinners = [index]
 		bestLowRank = rank
-	if self.lowHandEightOrBetter and not bestLowRank.isEightOrBetter():
-	    # Winner did not qualify for low
-	    return (None, [])
+	    elif rank == bestLowRank:
+		lowWinners.append(index)
 	return (bestLowRank, lowWinners)
 
-    def _findScoopers(self, lowWinners, highWinners):
-	scoopers = []
-	for winner in lowWinners:
-	    if highWinners.count(winner):
-		self.scoops[winner] += 1
-		scoopers.append(winner)
-	return scoopers
+    def _findScooper(self, lowWinners, highWinners):
+	"""Was there one winner of the whole pot?"""
+	if ((len(lowWinners) == 1) and
+	    (len(highWinners) == 1) and
+	    (lowWinners[0] == highWinners[0])):
+	    return lowWinners[0];
+	return None
 
     def lastGameToString(self):
 	import string
