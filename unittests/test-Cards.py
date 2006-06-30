@@ -82,16 +82,5 @@ class TestSequenceFunctions(unittest.TestCase):
 	    self.assertEquals(len(combs), 5)
 	self.assertEquals(count, 21)
 
-    def testFindStraight(self):
-	cards = Cards.fromString("AS KH QD TD 9H 3C")
-	s = cards.findStraight()
-	self.assertEquals(len(s), 3)
-	cards = Cards.fromString("AS KH QD JS TH 8C")
-	s = cards.findStraight()
-	self.assertEquals(len(s), 5)
-	cards = Cards.fromString("AS 8D 5H 4D 3S 2H")
-	s = cards.findStraight()
-	self.assertEquals(len(s), 5)
-	
 if __name__ == "__main__":
     unittest.main()

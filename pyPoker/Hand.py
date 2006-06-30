@@ -127,6 +127,15 @@ class Hand(Cards):
 		return False
 	return True
 
+    def countEightOrLower(self):
+	"""Return number of cards eight or lower (including aces), but discounting duplicated ranks."""
+	lowRanks = set()
+	for card in self:
+	    if ((card.rank <= Rank.EIGHT) or
+		(card.rank == Rank.ACE)):
+		lowRanks.add(card.rank)
+	return len(lowRanks)
+
 ######################################################################
 #
 # Stud Hand (for future expansion)
@@ -191,7 +200,10 @@ class SevenCardStudHand(StudHand):
 
 class Board(Hand):
     """A hand representing a set of community cards."""
-    pass
+
+    def eightLowPossible(self):
+	"""Return true if this board can produce a eight or better low."""
+	return (self.countEightOrLower() >= 3)
 
 class FiveCardBoard(Board):
     """A hand representing a five-card board."""
@@ -262,12 +274,8 @@ class OmahaHand(CommunityCardHand):
 
     def hands(self):
 	"""Return all sets of cards that can be constructed from hand."""
-	holeCards = self.getHoleCards()
-	for holeCombo in holeCards.combinations(2):
-	    combo = holeCombo.copy()
-	    if self.board:
-		combo.extend(self.board)
-	    yield combo
+	for hand in self.combinations(5):
+	    yield hand
 
     def combinations(self, n):
 	"""Generator function return all combinations of n cards (including
@@ -285,4 +293,8 @@ class OmahaHand(CommunityCardHand):
 		    yield combo
 	else:
 	    raise NotEnoughCardsException("Cannout generated hand of %d cards without board." % n)
+
+    def eightLowPossible(self):
+	"""Return true if this hand can have a eight or better low."""
+	return (self.countEightOrLower() >= 2)
 

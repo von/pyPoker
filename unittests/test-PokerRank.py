@@ -198,10 +198,21 @@ class TestSequenceFunctions(unittest.TestCase):
 	self.assertEqual(rank.secondaryCard, Rank.TEN,
 			 "secondaryCard = %s" % rank.secondaryCard)
 
-    def testOmaha2(self):
+    def testOmahaLow(self):
 	"""Test Omaha low hand ranking."""
 	hand = OmahaHand.fromString("5D 6H 9H 3C")
 	board = Board.fromString("4H 6C JH KH 8C")
+	hand.setBoard(board)
+	rank = PokerLowRank(hand)
+	self.assertEqual(rank, PokerRank.HIGH_CARD, "rank = %s" % rank)
+	self.assertEqual(rank.primaryCard, Rank.EIGHT,
+			 "primaryCard = %s kickers = %s" % (rank.primaryCard,
+							    rank.kickers))
+
+    def testOmahaLow2(self):
+	"""Test Omaha low hand ranking."""
+	hand = OmahaHand.fromString("QC AH TC 8C")
+	board = Board.fromString("2H JH 4D 6H 3H")
 	hand.setBoard(board)
 	rank = PokerLowRank(hand)
 	self.assertEqual(rank, PokerRank.HIGH_CARD, "rank = %s" % rank)

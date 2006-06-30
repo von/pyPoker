@@ -33,7 +33,7 @@ class NotEnoughCardsException(PokerException):
 ######################################################################
 
 
-class Suit:
+class Suit(int):
     CLUB = 1
     CLUBS = 1
     DIAMOND = 2
@@ -51,12 +51,9 @@ class Suit:
 			 HEARTS:"hearts", SPADES:"spades" }
 
     def __init__(self, value):
-	if isinstance(value, Suit):
-	    self.value = value.value
-	else:
-	    if Suit.suits.count(value) == 0:
-		raise BadSuitException("Invalud value %d" % value)
-	    self.value = value
+	# At this point self has already been set
+	if Suit.suits.count(self) == 0:
+	    raise BadSuitException("Invalud value %d" % self)
 
     def fromString(string):
 	char = string.upper()
@@ -77,30 +74,22 @@ class Suit:
     random = staticmethod(random)
 
     def __str__(self):
-	return self.suitsShortString[self.value]
+	return self.suitsShortString[self]
 
     def str(self):
 	return self.__str()
 
     def shortString(self):
-	return self.suitsShortString[self.value]
+	return self.suitsShortString[self]
 
     def longString(self):
-	return self.suitsLongString[self.value]
+	return self.suitsLongString[self]
 
-    def __cmp__(self, other):
-	# Optimize for comparison to other Suit object
-	try:
-	    return cmp(self.value, other.value)
-	except:
-	    pass
-	# Must be int
-	return cmp(self.value, other)
 
 ######################################################################
 
 
-class Rank:
+class Rank(int):
     ACE_LOW = 1
     TWO = 2
     THREE = 3
@@ -135,14 +124,9 @@ class Rank:
     acesLow = False
 
     def __init__(self, value):
-	if isinstance(value, Rank):
-	    self.value = value.value
-	else:
-	    if value == self.ACE_LOW:
-		value = self.ACE
-	    if Rank.ranks.count(value) == 0:
-		raise BadRankException("Invalid value %d" % value)
-	    self.value = value
+	# At this point self has already been set
+	if Rank.ranks.count(self) == 0:
+	    raise BadRankException("Invalid value %d" % value)
 
     def fromString(string):
 	char = string.upper()
@@ -163,19 +147,19 @@ class Rank:
     random = staticmethod(random)
 
     def __str__(self):
-	return Rank.ranksShortString[self.value]
+	return Rank.ranksShortString[self]
 
     def str(self):
 	return self.__str()
 
     def shortString(self):
-	return self.ranksShortString[self.value]
+	return self.ranksShortString[self]
 
     def longString(self):
-	return self.ranksLongString[self.value]
+	return self.ranksLongString[self]
 
     def pluralString(self):
-	return self.ranksPluralString[self.value]
+	return self.ranksPluralString[self]
 
     def acesAreLow(cls):
 	cls.acesLow = True
@@ -188,25 +172,18 @@ class Rank:
     acesAreHigh = classmethod(acesAreHigh)
 
     def __cmp__(self, other):
-	# Optimize for comparison with other Rank object
-	try:
-	    otherRank = other.value
-	except:
-	    # Must be int
-	    otherRank = other
-	selfValue = self.value
 	if (self.acesLow):
-	    if (selfValue == Rank.ACE):
-		selfValue = Rank.ACE_LOW
-	    if (otherRank == Rank.ACE):
-		otherRank = Rank.ACE_LOW
-	return cmp(selfValue, otherRank)
+	    if int.__cmp__(self, self.ACE) == 0:
+		selfValue = self.ACE_LOW
+	    else:
+		selfValue = self
+	    if int.__cmp__(other, self.ACE) == 0:
+		otherValue = self.ACE_LOW
+	    else:
+		otherValue = other
+	    return int.__cmp__(selfValue, otherValue)
+	return int.__cmp__(self, other)
 
-    def __add__(self, value):
-	return Rank(self.value + value)
-
-    def __sub__(self, value):
-	return Rank(self.value - value)
 
 ######################################################################
 
@@ -299,7 +276,7 @@ class Cards(list):
     def fromStrings(cls, strings):
 	"""Create an object from an array of strings, eacho of which
 	description of a card (e.g. ['4H','7C','9D'])."""
-	return cls([Card().fromString(s) for s in strings])
+	return cls([Card.fromString(s) for s in strings])
 
     fromStrings = classmethod(fromStrings)
 
@@ -372,40 +349,6 @@ class Cards(list):
 	    if card.suit == suit:
 		count += 1
 	return count
-
-    def findStraight(self):
-	if len(self) == 0:
-	    raise NotEnoughCardsException("Zero cards in hand.")
-	longestStraight = Cards()
-	straight = Cards()
-	straight.append(self[0])
-	for index in range(1,len(self)):
-	    if self[index].rank != (straight[len(straight)-1].rank - 1):
-		if len(straight) > len(longestStraight):
-		    longestStraight = straight
-		straight = Cards()
-	    straight.append(self[index])
-	if len(straight) > len(longestStraight):
-	    longestStraight = straight
-	# Check for special case of straight ending with a 2 when we have
-	# and Ace, in which case treat the ace as low.
-	if ((longestStraight[len(longestStraight)-1].rank == Rank.TWO) and
-	    (self[0].rank == Rank.ACE)):
-	    longestStraight.append(self[0])
-	return longestStraight
-	
-    def consecutivelyDescending(self):
-	"""Are cards consecutively descending? Used for straight testing.
-	If there is only one card in the array, returns True."""
-	try:
-	    for index in range(len(self)-1):
-		if (self[index].rank != (self[index+1].rank + 1)):
-		    return False
-	except BadRankException:
-	    # When out of bounds, which means we had an ACE in card past first
-	    # so we cannot be consectively descending
-	    return False
-	return True
 
     def __getslice__(self, start, stop):
 	"""Allow slices to return a Cards object instead of a list object."""

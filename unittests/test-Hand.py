@@ -67,5 +67,48 @@ class TestSequenceFunctions(unittest.TestCase):
 	board = Board.fromString("7C 8C 9C")
 	self.assertEqual("%s" % board, "7C 8C 9C xx xx")
 
+    def testBoardEightLow(self):
+	for board in [ "AC 2C 3C 4C 5C",
+		       "AC AH 3C 4C 9C",
+		       "AC 2C 8C TC KC" ]:
+	    self.assertEqual(Board.fromString(board).eightLowPossible(),
+			     True, "%s not True" % board)
+	for board in [ "AC AH 8C 9D TH",
+		       "AC AH 2D TC JH",
+		       "8C 9H TD JC QH",
+		       "AC 2C 9C TC JD" ]:
+	    self.assertEqual(Board.fromString(board).eightLowPossible(),
+			     False, "%s not False" % board)
+
+    def testOmahaLowPossible(self):
+	for hand in [ "AC 2C 3C 4D",
+		      "AC AD 2C 2D",
+		      "7C 8C 9C TC",
+		      "AC 8C JC KC" ]:
+	    self.assertEqual(OmahaHand.fromString(hand).eightLowPossible(),
+			     True, "%s not True" % hand)
+	for hand in [ "AC AH AS 9D",
+		      "AC AD 9C TD",
+		      "7C 9C TC KC",
+		      "AC 9C JC KC" ]:
+	    self.assertEqual(OmahaHand.fromString(hand).eightLowPossible(),
+			     False, "%s not False" % hand)
+
+    def testOmahaCombinations(self):
+	"""Testing Omaha combinations."""
+	hand = OmahaHand.fromString("AC 2C 3C 4C");
+	board = Board.fromString("5C 6C 7C 8C 9C");
+	hand.setBoard(board)
+	count = 0
+	for combs in hand.combinations(2):
+	    count += 1
+	    self.assertEquals(len(combs), 2, "combs = %s" % combs)
+	self.assertEquals(count, 6)
+	count = 0
+	for combs in hand.hands():
+	    count += 1
+	    self.assertEquals(len(combs), 5, "combs = %s" % combs)
+	self.assertEquals(count, 60)
+
 if __name__ == "__main__":
     unittest.main()
