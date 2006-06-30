@@ -17,3 +17,7 @@ class PokerException(Exception):
 
     def __str__(self):
 	return self.value
+
+class PokerInternalException(PokerException):
+    """Some sort of internal error."""
+    pass
