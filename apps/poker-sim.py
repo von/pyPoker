@@ -13,6 +13,7 @@ import string
 from pyPoker.PokerGame import PokerGame, HoldEmGame, FiveCardStudHiLoGame, OmahaGame, OmahaHiLoGame
 from pyPoker.Hand import Hand, Board
 from pyPoker.Hands import Hands
+from pyPoker.Cards import Cards
 
 ######################################################################
 #
@@ -78,8 +79,7 @@ hands = Hands()
 
 if options.hands is not None:
 	for hand in options.hands:
-		cards = Cards()
-		cards.fromString(hand)
+		cards = Cards.fromString(hand)
 		hands.addHand(HandClass(cards))
 	game.addHands(hands)
 
