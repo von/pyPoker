@@ -21,11 +21,11 @@ from pyPoker.Cards import Cards
 #
 
 def showHandCallback(game):
-	print game.lastGameToString()
+    print game.lastGameToString()
 
 def showProgressCallback(game):
-	sys.stdout.write(".")
-	sys.stdout.flush()
+    sys.stdout.write(".")
+    sys.stdout.flush()
 
 ######################################################################
 #
@@ -64,13 +64,13 @@ parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
 (options, args) = parser.parse_args()
 
 if game.has_key(options.game):
-	GameClass = game[options.game]
+    GameClass = game[options.game]
 else:
-	print "Unknown game type \"%s\"" % options.game
-	print "Known games are:"
-	for name in game.keys():
-		print "\t%s" % name
-	sys.exit(1)
+    print "Unknown game type \"%s\"" % options.game
+    print "Known games are:"
+    for name in game.keys():
+	print "\t%s" % name
+    sys.exit(1)
 
 game = GameClass(numHands = options.numHands)
 HandClass = GameClass.getHandClass()
@@ -78,39 +78,39 @@ HandClass = GameClass.getHandClass()
 hands = Hands()
 
 if options.hands is not None:
-	for hand in options.hands:
-		cards = Cards.fromString(hand)
-		hands.addHand(HandClass(cards))
-	game.addHands(hands)
+    for hand in options.hands:
+	cards = Cards.fromString(hand)
+	hands.addHand(HandClass(cards))
+    game.addHands(hands)
 
 board = Board()
 if options.board:
-	board.fromString(options.board)
-	game.setBoard(board)
+    board.fromString(options.board)
+    game.setBoard(board)
 
 if options.verbose:
-	callback=showHandCallback
+    callback=showHandCallback
 
-	print "Simulating %d games" % options.numGames
-	print "%d Hands: %s" % (game.getNumHands(), hands)
-	if game.board:
-		print "Board: %s" % game.board
+    print "Simulating %d games" % options.numGames
+    print "%d Hands: %s" % (game.getNumHands(), hands)
+    if game.board:
+	print "Board: %s" % game.board
 elif options.showProgress:
-	callback=showProgressCallback
+    callback=showProgressCallback
 else:
-	callback=None
+    callback=None
 
 cmd="game.simulateGames(options.numGames, callback=callback)"
 
 if options.profile:
-	import profile
-	print "Profiling to file %s" % options.profile
-	profile.run(cmd, options.profile)
+    import profile
+    print "Profiling to file %s" % options.profile
+    profile.run(cmd, options.profile)
 else:
     eval(cmd)
 
 if options.showProgress:
-	print
+    print
 
 print game.statsToString()
 
