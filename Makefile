@@ -20,13 +20,31 @@ game-sims: $(GAME_SIMS)
 
 $(GAME_SIMS):
 	@echo "Running $@ simulation:"
-	@$(EXEC_PY) apps/poker-sim.py -p -g $@ -P profile/$@.pstats
+	@$(EXEC_PY) apps/poker-sim.py -p -g $@
 
 $(OTHER_APPS):
 	@$(EXEC_PY) apps/$@.py
 
 sha:
 	@$(EXEC_PY) apps/sha.py -v apps/sha-input
+
+######################################################################
+#
+# Profiling
+#
+
+# Make a copy of all the current profiles in snapshot subdirectory
+profile-snapshot:
+	@test -d profile/snapshot || mkdir profile/snapshot
+	@for profile in profile/*.pstats ; do \
+		cp $${profile} profile/snapshot ;\
+	done
+
+profiles:
+	@for game in $(GAME_SIMS) ; do \
+		echo Profiling $${game}: ;\
+		$(EXEC_PY) apps/poker-sim.py -g $${game} -P profile/$${game}.pstats ;\
+	done
 
 ######################################################################
 #

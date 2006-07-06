@@ -100,23 +100,19 @@ elif options.showProgress:
 else:
 	callback=None
 
+cmd="game.simulateGames(options.numGames, callback=callback)"
+
 if options.profile:
 	import profile
-	profile.run("game.simulateGames(options.numGames, callback=callback)",
-		    options.profile)
+	print "Profiling to file %s" % options.profile
+	profile.run(cmd, options.profile)
 else:
-	game.simulateGames(options.numGames, callback=callback)
-
+    eval(cmd)
 
 if options.showProgress:
 	print
 
 print game.statsToString()
-
-if options.profile:
-	import pstats
-	stats = pstats.Stats(options.profile)
-	stats.strip_dirs().sort_stats("cumulative").print_stats(20)
 
 sys.exit(0)
 
