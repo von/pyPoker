@@ -36,7 +36,7 @@ class Deck(Cards):
     def __init__(self, cards = None):
 	"""Create a new deck of cards. Note that deck is not shuffled.  Deck
 	will have standards 52 cards, unless arguments cards is not None, it
-	should be a Cards obhect which the deck should contain."""
+	should be a Cards object which the deck should contain."""
 	if cards is None:
 	    self.reset()
 	else:
@@ -61,8 +61,8 @@ class Deck(Cards):
 	if numCards == 0:
 	    return
 	# Allow for a single hand
-	if not isinstance(hands, list):
-	    hands = [ hands]
+	if isinstance(hands, Hand):
+	    hands = [ hands ]
 	for card in range(numCards):
 	    for hand in hands:
 		hand.addCard(self.pop())
