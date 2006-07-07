@@ -53,6 +53,7 @@ profiles:
 
 # List in order to be tested
 UNITTESTS = test-Cards \
+	test-Deck \
 	test-Hand \
 	test-Hands \
 	test-PokerRank \
