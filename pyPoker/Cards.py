@@ -161,12 +161,29 @@ class Rank(int):
     def pluralString(self):
 	return self.ranksPluralString[self]
 
+    def getAcesLow(cls):
+	"""Return True if Aces are low, False otherwise."""
+	return cls.acesLow
+
+    getAcesLow = classmethod(getAcesLow)
+
+    def setAcesLow(cls, bool):
+	"""Set Aces low if bool == True, high otherwise."""
+	if bool:
+	    cls.acesAreLow()
+	else:
+	    cls.acesAreHigh()
+
+    setAcesLow = classmethod(setAcesLow)
+
     def acesAreLow(cls):
+	"""Set Aces to be low."""
 	cls.acesLow = True
 
     acesAreLow = classmethod(acesAreLow)
 
     def acesAreHigh(cls):
+	"""Set Aces to be high."""
 	cls.acesLow = False
 
     acesAreHigh = classmethod(acesAreHigh)
@@ -356,3 +373,34 @@ class Cards(list):
 	cards = Cards()
 	cards.extend(slice)
 	return cards
+
+    def haveSuitedAce(self):
+	"""Return True if we have an Ace and another card of the same suit."""
+	# Quick optimization, if we have no ace, then we're done
+	if self.rankCount(Rank.ACE) == 0:
+	    return False
+	for suit in Suit.suits:
+	    suitedCards = self.suitedCards(suit)
+	    if ((len(suitedCards) > 1) and
+		suitedCards.rankCount(Rank.ACE)):
+		return True
+	return False
+
+    def bigCardCount(self):
+	"""Return number of cards that are a Ten, Jack, Queen, King or Ace."""
+	count = 0
+	for card in self:
+	    if ((card.rank == Rank.ACE) or
+		(card.rank > Rank.NINE)):
+		count += 1
+	return count
+
+    def babyCount(self):
+	"""Return number of cards that are babies (Ace through Five)."""
+	count = 0
+	for card in self:
+	    if card.rank < Rank.SIX:
+		count += 1
+	return count
+
+    
