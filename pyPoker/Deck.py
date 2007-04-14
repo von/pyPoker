@@ -33,6 +33,9 @@ class CardNotFoundException(PokerException):
 #
 
 class Deck(Cards):
+    # Number of cards in full deck
+    numCards = 52
+
     def __init__(self, cards = None):
 	"""Create a new deck of cards. Note that deck is not shuffled.  Deck
 	will have standards 52 cards, unless arguments cards is not None, it
@@ -81,10 +84,22 @@ class Deck(Cards):
 		    raise InvalidHandTypeException("Bad hand type (%s)"
 						   % hand.__class__)
                 if len(hand) < hand.getMaxCards():
-                    hand.addCard(self.pop())
+		    try:
+			hand.addCard(self.pop())
+		    except IndexError:
+			raise NotEnoughCardsException
                     cardDealt = True
             if cardDealt == False:
                 break
+
+    def createHands(self, num, handClass=Hand):
+	"""Create num complete hands and return. By default hands will be of
+class Hand, but this can be overridden with handClass."""
+	hands = []
+	for hand in range(num):
+	    hands.append(handClass())
+	self.dealHands(hands)
+	return hands
 
     def burn(self, numCards=1):
 	"""Burn numCards cards."""
