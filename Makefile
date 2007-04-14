@@ -10,9 +10,16 @@ test: unittests apptests
 GAME_SIMS= holdem \
 	omaha \
 	omahahilo \
-	fivecardstudhilo
+	fivecardstud \
+	fivecardstudhilo \
+	sevencardstud \
+	sevencardstudhilo
 
-OTHER_APPS= holdem-best-hand
+OTHER_APPS= holdem-best-hand \
+	holdem-best-suited-hand \
+	board-low-analyze \
+	board-flush-analyze \
+	omaha8-eval
 
 apptests: game-sims $(OTHER_APPS) sha
 
@@ -53,6 +60,7 @@ profiles:
 
 # List in order to be tested
 UNITTESTS = test-Cards \
+	test-PredefinedCards \
 	test-Deck \
 	test-Hand \
 	test-Hands \
