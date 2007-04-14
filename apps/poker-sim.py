@@ -10,7 +10,7 @@
 from optparse import OptionParser
 import sys
 import string
-from pyPoker.PokerGame import PokerGame, HoldEmGame, FiveCardStudHiLoGame, OmahaGame, OmahaHiLoGame
+from pyPoker.PokerGame import PokerGame, HoldEmGame, FiveCardStudGame, FiveCardStudHiLoGame, SevenCardStudGame, SevenCardStudHiLoGame, OmahaGame, OmahaHiLoGame
 from pyPoker.Hand import Hand, Board
 from pyPoker.Hands import Hands
 from pyPoker.Cards import Cards
@@ -34,8 +34,14 @@ def showProgressCallback(game):
 
 game = {
 	"holdem" : HoldEmGame,
+	"5cardstud" : FiveCardStudGame,
+	"fivecardstud" : FiveCardStudGame,
 	"5cardstudhilo" : FiveCardStudHiLoGame,
 	"fivecardstudhilo" : FiveCardStudHiLoGame,
+	"7cardstud" : SevenCardStudGame,
+	"sevencardstud" : SevenCardStudGame,
+	"7cardstudhilo" : SevenCardStudHiLoGame,
+	"sevencardstudhilo" : SevenCardStudHiLoGame,
 	"omaha" : OmahaGame,
 	"omahahilo" : OmahaHiLoGame,
 	}
@@ -72,27 +78,35 @@ else:
 	print "\t%s" % name
     sys.exit(1)
 
+
+maxHands = GameClass.getMaxHands()
+if options.numHands > maxHands:
+    options.numHands = maxHands
+    if options.verbose:
+	print "Reducing number of hands to %d" % maxHands
+
 game = GameClass(numHands = options.numHands)
 HandClass = GameClass.getHandClass()
 
-hands = Hands()
-
 if options.hands is not None:
+    hands = Hands()
     for hand in options.hands:
-	cards = Cards.fromString(hand)
-	hands.addHand(HandClass(cards))
+	hands.addHand(HandClass.fromString(hand))
     game.addHands(hands)
 
-board = Board()
 if options.board:
-    board.fromString(options.board)
-    game.setBoard(board)
+    game.setBoard(Board.fromString(options.board))
 
 if options.verbose:
     callback=showHandCallback
 
-    print "Simulating %d games" % options.numGames
-    print "%d Hands: %s" % (game.getNumHands(), hands)
+    print "Simulating %d games of %s" % (options.numGames,
+					 GameClass.gameName)
+    print "%d Hands" % game.getNumHands(),
+    if game.hands:
+	print ": %s" % game.hands
+    else:
+	print
     if game.board:
 	print "Board: %s" % game.board
 elif options.showProgress:

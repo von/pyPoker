@@ -10,7 +10,7 @@
 ######################################################################
 
 from PokerException import PokerException
-from Hand import Hand, CommunityCardHand, HoldEmHand, FiveCardStudHand, OmahaHand
+from Hand import Hand, CommunityCardHand, HoldEmHand, FiveCardStudHand, SevenCardStudHand, OmahaHand
 from Hands import Hands
 from Cards import Cards
 from Deck import Deck
@@ -27,6 +27,10 @@ class PokerGameStateException(PokerException):
     """Error in state for game simulation."""
     pass
 
+class TooManyHandsException(PokerException):
+    """Too many hands defined (not enough cards)."""
+    pass
+
 ######################################################################
 #
 # PokerGame
@@ -35,6 +39,12 @@ class PokerGameStateException(PokerException):
 class PokerGame:
     # Type of hand used in this game, should be redefined in subclasses
     handClass = Hand
+
+    # Type of Deck used in this game
+    deckClass = Deck
+
+    # Name of this game
+    gameName = "Poker"
 
     # Support for board here, but don't allow setting in this class
     board = None
@@ -82,7 +92,9 @@ class PokerGame:
 
     def __init__(self, numHands = 0, hands=None):
 	assertInstance(numHands, int)
-	self.deck = Deck()
+	self.deck = self.deckClass()
+	if numHands and (numHands > self.getMaxHands()):
+	    raise TooManyHandsException
 	self.numHands = numHands
 	self.hands = Hands()
 	self.lowHandsWin = (self.lowHandRankClass != None)
@@ -123,6 +135,8 @@ class PokerGame:
 	    return
 	if isinstance(hands, Hand) or isinstance(hands, HandGenerator):
 	    hands = [ hands ]
+	if len(self.hands) + len(hands) > self.getMaxHands():
+	    raise TooManyHandsException
 	for hand in hands:
 	    if hand is None:
 		self.hands.addHand(self.handClass())
@@ -138,14 +152,27 @@ class PokerGame:
 	assertInstance(hg, HandGenerator)
 	self.hands.addHand(hg)
 
+    def getMaxHands(cls):
+	cardsPerHand = cls.handClass.maxCards
+	if cls.hasBoard():
+	    boardCards = cls.handClass.boardClass.maxCards
+	else:
+	    boardCards = 0
+	numCards = cls.deckClass.numCards - boardCards
+	return int(numCards/cardsPerHand)
+
+    getMaxHands = classmethod(getMaxHands)
+	
     def getNumHands(self):
 	return max(self.numHands, len(self.hands))
 
     def getHands(self):
 	return self.hands
 
-    def hasBoard(self):
-	return (self.handClass.boardClass != None)
+    def hasBoard(cls):
+	return (cls.handClass.boardClass != None)
+
+    hasBoard = classmethod(hasBoard)
 
     def setBoard(self, board):
 	if not self.hasBoard():
@@ -249,6 +276,8 @@ class PokerGame:
 		self.lowWins[winner] += 1
 	if self.lowHandsWin and self.highHandsWin:
 	    self.lastGameScooper = self._findScooper(lowWinners, highWinners)
+	    if self.lastGameScooper is not None:
+		self.scoops[self.lastGameScooper] += 1
 
     def _findHighHands(self, hands, board):
 	highWinners = [ 0 ]
@@ -315,16 +344,15 @@ class PokerGame:
 			   for hand in self.lastGameLowWinners])
 	    s += ") "
 	if self.lowHandsWin and self.highHandsWin:
-	    if len(self.lastGameScoopers):
-		s += " Scoopers: "
-		for scooper in self.lastGameScoopers:
-		    s += str(scooper + 1) + " "
+	    if self.lastGameScooper is not None:
+		s += "(Hand %d scoops)" % (self.lastGameScooper + 1)
 	s.strip()
 	return s
 
     def statsToString(self):
 	s = ""
 	for hand in range(self.getNumHands()):
+	    s += "%2d:" % (hand + 1)
 	    if hand >= len(self.hands):
 		handStr = "XX " * self.handClass.getMaxCards()
 		s += handStr
@@ -332,12 +360,12 @@ class PokerGame:
 		s += str(self.hands[hand]) + " "
 	    if self.highHandsWin:
 		wins = self.highWins[hand]
-		s += "High wins %4d (%6.2f%%)" % (
+		s += "High wins %4d (%3.0f%%)" % (
 		    wins,
 		    100.0 * wins / self.gameNum)
 	    if self.lowHandsWin:
 		wins = self.lowWins[hand]
-		s += " Low wins %4d (%6.2f%%)" % (
+		s += " Low wins %4d (%3.0f%%)" % (
 		    wins,
 		    100.0 * wins / self.gameNum)
 	    if self.highHandsWin and self.lowHandsWin:
@@ -347,6 +375,7 @@ class PokerGame:
 
 class CommunityCardPokerGame(PokerGame):
     handClass = CommunityCardHand
+    gameName = "Community Card Poker"
 
     def __init__(self, numHands = 0, hands=None, board=None):
 	PokerGame.__init__(self, numHands=numHands, hands=None)
@@ -356,15 +385,30 @@ class CommunityCardPokerGame(PokerGame):
 
 class HoldEmGame(CommunityCardPokerGame):
     handClass = HoldEmHand
+    gameName = "Texas Hold'em"
 
-class FiveCardStudHiLoGame(PokerGame):
+class FiveCardStudGame(PokerGame):
     handClass = FiveCardStudHand
+    gameName = "Five-card Stud"
+
+class FiveCardStudHiLoGame(FiveCardStudGame):
     lowHandRankClass = PokerLowRank
+    gameName = "Five-card Stud Hi/Lo"
+
+class SevenCardStudGame(PokerGame):
+    handClass = SevenCardStudHand
+    gameName = "Seven-card Stud"
+
+class SevenCardStudHiLoGame(SevenCardStudGame):
+    lowHandRankClass = PokerLowRank
+    gameName = "Seven-card Stud Hi/Lo"
 
 class OmahaGame(CommunityCardPokerGame):
     handClass = OmahaHand
+    gameName = "Omaha"
 
 class OmahaHiLoGame(OmahaGame):
     lowHandRankClass = PokerLowRank
     lowHandEightOrBetter = True
+    gameName = "Omaha Hi/Lo 8-or-better"
 
