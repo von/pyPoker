@@ -110,5 +110,23 @@ class TestSequenceFunctions(unittest.TestCase):
 	    self.assertEquals(len(combs), 5, "combs = %s" % combs)
 	self.assertEquals(count, 60)
 
+    def testOmahaPoints(self):
+	"""Test Omaha HiLo point scoring."""
+	hands = {
+	    "AC AD 2C 3D":95,
+	    "AC KH QD JS":16,
+	    "AC AD KH KS":45,
+	    "KS 2S QH 3H":22,
+	    "AC AH AD 4H":35,
+	    "AC 2C 3C 4H":74,
+	    "7C 8C 9C TC":12
+	    }
+	for hand in hands.keys():
+	    value = OmahaHand.fromString(hand).pointValue()
+	    self.assertEquals(value, hands[hand],
+			      "%s == %d != %d points" % (hand, value, 
+							 hands[hand]))
+			  
+
 if __name__ == "__main__":
     unittest.main()
