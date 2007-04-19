@@ -75,3 +75,13 @@ $(UNITTESTS):
 	@echo "$@:"
 	@$(EXEC_PY) unittests/$@.py
 
+######################################################################
+#
+# Documentation
+#
+
+doc:
+	@(cd pyPoker; pydoc -w ./*.py)
+	@mv pyPoker/*.html doc/
+
+.PHONY: doc
