@@ -17,6 +17,7 @@ GAME_SIMS= holdem \
 
 OTHER_APPS= holdem-best-hand \
 	holdem-best-suited-hand \
+	holdem-domination \
 	board-low-analyze \
 	board-flush-analyze \
 	omaha8-eval
