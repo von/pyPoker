@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-######################################################################
-#
-# Shown tournament equity of players.
-#
-# $Id$
-#
-######################################################################
+"""Show tournament equity of players.
+
+Given a list of player stack sizes and a payout structure, return each
+players equity.
+
+Based on method described in Harrington on Hold'em vol 3, page 2559.
+"""
 
 import optparse
 import sys
@@ -71,43 +71,50 @@ def calculateEquity(stackArray):
         
     return playerArray
 
-def parseStacks(option, opt_str, value, parser):
-    """optparse callback to handle variable number of stacks."""
-    value = []
+def parseIntVarArgs(option, opt_str, value, parser):
+    """optparse callback to handle variable number of integers."""
+    # Get and append to any existing value
+    value = getattr(parser.values, option.dest, [])
+    # getattr may return None, in which case we want an empty array
+    if value is None:
+        value = []
     while parser.rargs:
+        arg = parser.rargs[0]
         # If we encounter another option, we're done
-        if parser.rargs[0][0] == "-":
+        if arg[0] == "-":
+            break
+        # If not an integer, we done
+        try:
+            argValue = int(arg)
+        except:
             break
         value.append(int(parser.rargs.pop(0)))
-    setattr(parser.values, "stacks", value)
-        
+    setattr(parser.values, option.dest, value)
 
-def parsePayout(option, opt_str, value, parser):
-    """optparse callback to handle variable number of payouts."""
-    value = []
-    while parser.rargs:
-        # If we encounter another option, we're done
-        if parser.rargs[0][0] == "-":
-            break
-        value.append(int(parser.rargs.pop(0)))
-    setattr(parser.values, "payout", value)
-        
+def getVersionString():
+    """Return our RCS/CVS version string."""
+    import re
+    revisionString = "$Revision$"
+    match = re.match("\$Revision$", revisionString)
+    if match is None:
+        return "unknown"
+    version = match.group(1)
+    if version is None:
+        return "unknown"
+    return version
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    usage = "usage: %prog [options]"
-    parser = optparse.OptionParser(usage)
-    parser.add_option("-p", "--payout",
-                      action="callback", callback=parsePayout)
-    parser.add_option("-s", "--stacks",
-                      action="callback", callback=parseStacks)
+    usage = "usage: %prog -s <stack1> <stack2>... -p <payout1> <payout2>..."
+    version = "%prog version " + getVersionString()
+    parser = optparse.OptionParser(usage=usage, version=version)
+    parser.add_option("-p", "--payout", dest="payout",
+                      action="callback", callback=parseIntVarArgs)
+    parser.add_option("-s", "--stacks", dest="stacks",
+                      action="callback", callback=parseIntVarArgs)
     (options, args) = parser.parse_args(argv)
-    print options.stacks
-    print options.payout
-
-    #stacks = [8200, 3800, 0, 800]
-    #payout = [90, 54, 26]
 
     playerChances = calculateEquity(options.stacks)
     numPlayers = len(options.stacks)
