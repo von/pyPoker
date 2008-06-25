@@ -1,11 +1,5 @@
 #!/usr/bin/env python
-######################################################################
-#
-# Simulate chances five card board making flushes, pairs, etc.
-#
-# $Id$
-#
-######################################################################
+"""Simulate chances of a five card board making flushes, pairs, etc."""
 
 from optparse import OptionParser
 from pyPoker.Hand import Board, Hand
@@ -13,51 +7,70 @@ from pyPoker.Cards import Suit, Rank
 from pyPoker.Deck import Deck
 import sys
 
+def getVersionString():
+    """Return our RCS/CVS version string."""
+    import re
+    revisionString = "$Revision$"
+    match = re.match("\$Revision$", revisionString)
+    if match is None:
+        return "unknown"
+    version = match.group(1)
+    if version is None:
+        return "unknown"
+    return version
+
 ######################################################################
 
-usage = "usage: %prog [<options>]"
-parser = OptionParser(usage)
-parser.add_option("-n", "--numDeals", type="int", dest="numDeals",
-		  default=1000, help="number of deals to simulate (Default is 100)")
-parser.add_option("-p", "--showProgress", action="store_true",
-		  dest="showProgress", default=False, help="show progress")
-(options, args) = parser.parse_args()
 
-######################################################################
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv
 
-print "Testing for %d deals" % options.numDeals
+    usage = "usage: %prog [<options>]"
+    version = "%prog version " + getVersionString()
+    parser = OptionParser(usage=usage, version=version)
+    parser.add_option("-n", "--numDeals", type="int", dest="numDeals",
+                      default=1000,
+                      help="number of deals to simulate (Default is 100)")
+    parser.add_option("-p", "--showProgress", action="store_true",
+                      dest="showProgress", default=False, help="show progress")
+    (options, args) = parser.parse_args()
 
-possibleFlushes = 0
+    print "Testing for %d deals" % options.numDeals
 
-flushCounts = [ 0, 0, 0, 0, 0, 0]
-rankCounts = [ 0, 0, 0, 0, 0]
+    possibleFlushes = 0
 
-for deal in range(options.numDeals):
-    deck = Deck()
-    deck.shuffle()
-    board = Board()
-    deck.deal(board, 5)
-    # Count flushes
-    for suit in Suit.suits:
-	count = board.suitCount(suit)
-	flushCounts[count] += 1
-    # Count pairs, trips and quads
-    for rank in Rank.ranks:
-	count = board.rankCount(rank)
-	rankCounts[count] += 1
-    if options.showProgress and (deal % 20 == 0):
-	sys.stdout.write(".")
-	sys.stdout.flush()
+    flushCounts = [ 0, 0, 0, 0, 0, 0]
+    rankCounts = [ 0, 0, 0, 0, 0]
 
-if options.showProgress:
-    print
+    for deal in range(options.numDeals):
+        deck = Deck()
+        deck.shuffle()
+        board = Board()
+        deck.deal(board, 5)
+        # Count flushes
+        for suit in Suit.suits:
+            count = board.suitCount(suit)
+            flushCounts[count] += 1
+        # Count pairs, trips and quads
+        for rank in Rank.ranks:
+            count = board.rankCount(rank)
+            rankCounts[count] += 1
+        if options.showProgress and (deal % 20 == 0):
+            sys.stdout.write(".")
+            sys.stdout.flush()
 
-for index in range(len(flushCounts)):
-    print "%d-flush ocurrances: %d" % (index,
-				      flushCounts[index])
+    if options.showProgress:
+        print
 
-print "Board pairs: %d" % rankCounts[2]
-print "Board trips: %d" % rankCounts[3]
-print "Board quads: %d" % rankCounts[4]
+    for index in range(len(flushCounts)):
+        print "%d-flush ocurrances: %d" % (index,
+                                           flushCounts[index])
 
-sys.exit(0)
+    print "Board pairs: %d" % rankCounts[2]
+    print "Board trips: %d" % rankCounts[3]
+    print "Board quads: %d" % rankCounts[4]
+
+if __name__ == "__main__":
+    sys.exit(main())
+

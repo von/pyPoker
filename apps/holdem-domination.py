@@ -1,11 +1,5 @@
 #!/usr/bin/env python
-######################################################################
-#
-# What are our chances of our HoldEm being dominated.
-#
-# $Id$
-#
-######################################################################
+"""What are our chances of our HoldEm hand being dominated?"""
 
 from optparse import OptionParser
 from pyPoker.Hand import HoldEmHand
@@ -17,47 +11,64 @@ import sys
 
 ######################################################################
 
-usage = "usage: %prog [<options>]"
-parser = OptionParser(usage)
-parser.add_option("-n", "--numDeals", type="int", dest="numDeals",
-		  default=1000, help="number of deals to simulate (Default is 1000)")
+def getVersionString():
+    """Return our RCS/CVS version string."""
+    import re
+    revisionString = "$Revision$"
+    match = re.match("\$Revision$", revisionString)
+    if match is None:
+        return "unknown"
+    version = match.group(1)
+    if version is None:
+        return "unknown"
+    return version
 
-(options, args) = parser.parse_args()
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv
 
-######################################################################
+    usage = "usage: %prog [<options>]"
+    version = "%prog version " + getVersionString()
+    parser = OptionParser(usage=usage, version=version)
+    parser.add_option("-n", "--numDeals", type="int", dest="numDeals",
+                      default=1000,
+                      help="number of deals to simulate (Default is 1000)")
 
-print "Testing for %d deals" % options.numDeals
+    (options, args) = parser.parse_args()
 
-for rank1 in range(Eight, King):
-    for rank2 in range(rank1 + 1, Ace):
-	hand = HoldEmHand([Card((rank1, Clubs)),
-			   Card((rank2, Clubs))])
+    print "Testing for %d deals" % options.numDeals
 
-	rank = HoldEmStartingHandRank(hand)
+    for rank1 in range(Eight, King):
+        for rank2 in range(rank1 + 1, Ace):
+            hand = HoldEmHand([Card((rank1, Clubs)),
+                               Card((rank2, Clubs))])
 
-	# Build starting deck
-	startingDeck = Deck()
-	startingDeck.removeCards([hand[0], hand[1]])
+            rank = HoldEmStartingHandRank(hand)
 
-	dominatedCount = 0
+            # Build starting deck
+            startingDeck = Deck()
+            startingDeck.removeCards([hand[0], hand[1]])
 
-	for deal in range(options.numDeals):
-	    deck = startingDeck.copy()
-	    deck.shuffle()
-	    hands = deck.createHands(8, HoldEmHand)
-	    dominated = False
-	    for h in hands:
-		if ((h[0].rank == hand[0].rank) or
-		    (h[0].rank == hand[1].rank) or
-		    (h[1].rank == hand[0].rank) or
-		    (h[1].rank == hand[1].rank)):
-		    # We have domination
-		    if (HoldEmStartingHandRank(h) > rank):
-			# Dealt hand is better
-			dominated = True
-	    if dominated:
-		dominatedCount += 1
+            dominatedCount = 0
 
-	print "%s: %3.2f" % (hand, 100 * dominatedCount/options.numDeals)
+            for deal in range(options.numDeals):
+                deck = startingDeck.copy()
+                deck.shuffle()
+                hands = deck.createHands(8, HoldEmHand)
+                dominated = False
+                for h in hands:
+                    if ((h[0].rank == hand[0].rank) or
+                        (h[0].rank == hand[1].rank) or
+                        (h[1].rank == hand[0].rank) or
+                        (h[1].rank == hand[1].rank)):
+                        # We have domination
+                        if (HoldEmStartingHandRank(h) > rank):
+                            # Dealt hand is better
+                            dominated = True
+                if dominated:
+                    dominatedCount += 1
 
-sys.exit(0)
+            print "%s: %3.2f" % (hand, 100 * dominatedCount/options.numDeals)
+
+if __name__ == "__main__":
+    sys.exit(main())

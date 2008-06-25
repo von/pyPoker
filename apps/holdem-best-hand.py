@@ -1,11 +1,5 @@
 #!/usr/bin/env python
-######################################################################
-#
-# Do I have the best Texas hold'em hand pre-flop?
-#
-# $Id$
-#
-######################################################################
+"""Do I have the best Texas hold'em hand pre-flop?"""
 
 from optparse import OptionParser
 import sys
@@ -17,25 +11,25 @@ from pyPoker.PokerRank import HoldEmStartingHandRank
 
 ######################################################################
 
-def printHeader():
+def printHeader(numHands):
     print
     print " Hand",
-    for i in range(options.numHands):
+    for i in range(numHands):
 	print " %3d " % (i+1),
     print
 
-def evaluateHand(hand):
+def evaluateHand(hand, numDeals, numHands):
     handRank = HoldEmStartingHandRank(hand)
-    betterThan = [ 0 ] * options.numHands
-    for deal in range(options.numDeals):
+    betterThan = [ 0 ] * numHands
+    for deal in range(numDeals):
 	deck = Deck()
 	deck.removeCards(hand)
 	deck.shuffle()
 	hands = []
-	for h in range(options.numHands):
+	for h in range(numHands):
 	    hands.append(HoldEmHand())
 	deck.dealHands(hands)
-	for h in range(options.numHands):
+	for h in range(numHands):
 	    rank = HoldEmStartingHandRank(hands[h])
 	    if handRank > rank:
 		betterThan[h] += 1
@@ -45,48 +39,69 @@ def evaluateHand(hand):
 
 ######################################################################
 
-usage = "usage: %prog [<options>]"
-parser = OptionParser(usage)
-parser.add_option("-n", "--numDeals", type="int", dest="numDeals",
-		  default=1000, help="number of deals to simulate (Default is 100)")
-parser.add_option("-N", "--numHands", type="int", dest="numHands",
-		  default=8, help="number of hands to compare against (Default is 8)")
+def getVersionString():
+    """Return our RCS/CVS version string."""
+    import re
+    revisionString = "$Revision$"
+    match = re.match("\$Revision$", revisionString)
+    if match is None:
+        return "unknown"
+    version = match.group(1)
+    if version is None:
+        return "unknown"
+    return version
 
-(options, args) = parser.parse_args()
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv
 
-print "Testing up to %d opposing hands, %d simulated deals" % (options.numHands,
-							       options.numDeals)
+        usage = "usage: %prog [<options>]"
+        version = "%prog version " + getVersionString()
+        parser = OptionParser(usage=usage, version=version)
+        parser.add_option("-n", "--numDeals", type="int", dest="numDeals",
+                          default=1000,
+                          help="number of deals to simulate (Default is 100)")
+        parser.add_option("-N", "--numHands", type="int", dest="numHands",
+                          default=8,
+                          help="number of hands to compare against (Default is 8)")
 
-count = 0
-printHeader()
-for topRank in Rank.ranks:
-    if count > 10:
-	printHeader()
-	count = 0
-    for lowRank in range(2, topRank + 1):
-	# We'll do pairs last
-	if topRank == lowRank:
-	    continue
-	cards = Cards([Card((topRank, Suit.CLUBS)),
-		       Card((lowRank, Suit.SPADE))])
-	hand = HoldEmHand(cards)
-	betterThan = evaluateHand(hand)
-	print hand,
-	for h in range(options.numHands):
-	    print " %3d%%" % ((100 * betterThan[h]) / options.numDeals),
-	print
-	count += 1
+        (options, args) = parser.parse_args()
 
-# Now do pairs
-printHeader()
-for rank in Rank.ranks:
-    cards = Cards([Card((rank, Suit.CLUBS)),
-		   Card((rank, Suit.SPADE))])
-    hand = HoldEmHand(cards)
-    betterThan = evaluateHand(hand)
-    print hand,
-    for h in range(options.numHands):
-	print " %3d%%" % ((100 * betterThan[h]) / options.numDeals),
-    print
+        print "Testing up to %d opposing hands, %d simulated deals" % (options.numHands,
+                                                                       options.numDeals)
 
-sys.exit(0)
+        count = 0
+        printHeader(options.numHands)
+        for topRank in Rank.ranks:
+            if count > 10:
+                printHeader(options.numHands)
+                count = 0
+        for lowRank in range(2, topRank + 1):
+            # We'll do pairs last
+            if topRank == lowRank:
+                continue
+            cards = Cards([Card((topRank, Suit.CLUBS)),
+                           Card((lowRank, Suit.SPADE))])
+            hand = HoldEmHand(cards)
+            betterThan = evaluateHand(hand, options.numDeals, options.numHands)
+            print hand,
+            for h in range(options.numHands):
+                print " %3d%%" % ((100 * betterThan[h]) / options.numDeals),
+            print
+            count += 1
+
+    # Now do pairs
+    printHeader(options.numHands)
+    for rank in Rank.ranks:
+        cards = Cards([Card((rank, Suit.CLUBS)),
+                       Card((rank, Suit.SPADE))])
+        hand = HoldEmHand(cards)
+        betterThan = evaluateHand(hand, options.numDeals, options.numHands)
+        print hand,
+        for h in range(options.numHands):
+            print " %3d%%" % ((100 * betterThan[h]) / options.numDeals),
+        print
+
+if __name__ == "__main__":
+    sys.exit(main())
+
