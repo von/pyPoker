@@ -51,7 +51,7 @@ profile-snapshot:
 profiles:
 	@for game in $(GAME_SIMS) ; do \
 		echo Profiling $${game}: ;\
-		$(EXEC_PY) apps/poker-sim.py -g $${game} -P profile/$${game}.pstats ;\
+		$(EXEC_PY) apps/poker-sim.py -g $${game} -P profile/$${game}.pstats || exit 1;\
 	done
 
 ######################################################################
