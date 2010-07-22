@@ -122,9 +122,10 @@ def main(argv=None):
     cmd="game.simulateGames(options.numGames, callback=callback)"
 
     if options.profile:
-        import profile
+        import cProfile
         print "Profiling to file %s" % options.profile
-        profile.run(cmd, options.profile)
+        # Need to supply context here as run() will just use __main__
+        cProfile.runctx(cmd, globals(), locals(), filename=options.profile)
     else:
         eval(cmd)
 
