@@ -60,7 +60,9 @@ profiles:
 #
 
 # List in order to be tested
-UNITTESTS = test-Cards \
+UNITTESTS = \
+	test-Bitfield \
+	test-Cards \
 	test-PredefinedCards \
 	test-Deck \
 	test-Hand \
