@@ -184,7 +184,6 @@ class PokerRank(PokerRankBase):
 	assertInstance(hand, Cards)
 	PokerRankBase.__init__(self)
 	self.hand = hand
-	Rank.acesAreHigh()
 	for cards in hand.hands():
 	    if len(cards) > 5:
 		rank = self.__getRankSixPlusCards(cards)
@@ -347,7 +346,7 @@ class PokerLowRank(PokerRankBase):
 	assertInstance(hand, Cards)
 	PokerRankBase.__init__(self, None, None, None, None)
 	self.hand = hand
-	Rank.acesAreLow()
+        self.hand.makeAcesLow()
 	for cards in hand.hands():
 	    rank = self.__getLowRank(cards)
 	    if (self.rank is None) or (cmp(self, rank) > 0):

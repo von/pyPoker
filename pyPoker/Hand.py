@@ -347,8 +347,7 @@ http://casinogambling.about.com/cs/poker/a/omahahilo_2.htm"""
 	# Count low hands
 	# A-2 is 20 points, A-3 is 15, 2-3 and A-4 is 10.
 	# Other two babies are 5 points.
-	acesLowState = Rank.getAcesLow()
-	Rank.acesAreLow()
+        self.makeAcesLow()
 	for rank in range(Rank.ACE_LOW, Rank.FIVE):
 	    for rank2 in range(rank + 1, Rank.SIX):
 		if self.rankCount(rank) and self.rankCount(rank2):
@@ -363,7 +362,7 @@ http://casinogambling.about.com/cs/poker/a/omahahilo_2.htm"""
 			total += 10
 		    else:
 			total += 5
-	Rank.setAcesLow(acesLowState)
+        self.makeAcesHigh()
 	return total
 
     def openingHand(self):

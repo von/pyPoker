@@ -11,9 +11,6 @@ import unittest
 
 class TestSequenceFunctions(unittest.TestCase):
 
-    def setUp(self):
-	Rank.acesAreHigh()
-
     def testRankCompare(self):
 	"""Test basic rank comparisons."""
 	for r in Rank.ranks:
@@ -25,8 +22,7 @@ class TestSequenceFunctions(unittest.TestCase):
 	    self.assert_(r1 < r2, "!%s < %s" % (r1, r2))
 
     def testRankCompareAcesLow(self):
-	Rank.acesAreLow()
-	ace = Rank(Rank.ACE)
+	ace = Rank(Rank.ACE_LOW)
 	for r in Rank.ranks:
 	    rank = Rank(r)
 	    if ace != rank:
@@ -53,6 +49,24 @@ class TestSequenceFunctions(unittest.TestCase):
 	self.assertEquals(c.rank, Rank.EIGHT)
 	self.assertEquals(c.suit, Suit.CLUBS)
 
+    def testAceLowHigh(self):
+        """Test making Aces high and low."""
+        c = Card.fromString("AC")
+        self.assertEquals(c.rank, Rank.ACE)
+        c.makeAcesLow()
+        self.assertEquals(c.rank, Rank.ACE_LOW)
+        c.makeAcesHigh()
+        self.assertEquals(c.rank, Rank.ACE)
+
+    def testAceLowHighNonAce(self):
+        """Test making sure makeAcesLow() and makeAcesHigh() have no effect on non-ace"""
+        c = Card.fromString("9D")
+        self.assertEquals(c.rank, Rank.NINE)
+        c.makeAcesLow()
+        self.assertEquals(c.rank, Rank.NINE)
+        c.makeAcesHigh()
+        self.assertEquals(c.rank, Rank.NINE)
+
     def testSort(self):
 	cards = Cards().fromString("3S KH 7H JD TS")
 	cards.sort()
@@ -62,6 +76,22 @@ class TestSequenceFunctions(unittest.TestCase):
 	self.assertEquals(cards[3], Rank.SEVEN, "%s" % cards)
 	self.assertEquals(cards[4], Rank.THREE, "%s" % cards)
 	
+    def testAceHighLowSort(self):
+        cards = Cards().fromString("7D AH KS 2C 9D")
+        cards.sort()
+        self.assertEquals(cards[0], Rank.ACE, "%s" % cards)
+	self.assertEquals(cards[1], Rank.KING, "%s" % cards)
+	self.assertEquals(cards[2], Rank.NINE, "%s" % cards)
+	self.assertEquals(cards[3], Rank.SEVEN, "%s" % cards)
+	self.assertEquals(cards[4], Rank.TWO, "%s" % cards)
+        cards.makeAcesLow()
+        cards.sort()
+	self.assertEquals(cards[0], Rank.KING, "%s" % cards)
+	self.assertEquals(cards[1], Rank.NINE, "%s" % cards)
+	self.assertEquals(cards[2], Rank.SEVEN, "%s" % cards)
+	self.assertEquals(cards[3], Rank.TWO, "%s" % cards)
+        self.assertEquals(cards[4], Rank.ACE_LOW, "%s" % cards)
+
     def testCombinations(self):
 	"""Test basic hand combinatins."""
 	cards = Cards.fromString("8C 9D 7C 6S AH")

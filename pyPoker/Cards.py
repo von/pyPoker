@@ -90,6 +90,8 @@ class Suit(int):
 
 
 class Rank(int):
+    UNDEFINED = 0
+    # Equivalent to ACE, but makes it easier to evaluate low hand
     ACE_LOW = 1
     TWO = 2
     THREE = 3
@@ -105,31 +107,35 @@ class Rank(int):
     KING = 13
     ACE = 14
     
-    ranks = range(2, ACE + 1)
+    ranks = range(ACE_LOW, ACE + 1)
 
-    ranksShortString = { ACE:"A", 2:"2", 3:"3", 4:"4", 5:"5", 6:"6",
+    ranksShortString = { ACE:"A", ACE_LOW:"A",
+                         2:"2", 3:"3", 4:"4", 5:"5", 6:"6",
 			 7:"7", 8:"8", 9:"9", 10:"T", JACK:"J", QUEEN:"Q",
 			 KING:"K" }
 
-    ranksLongString = { ACE:"ace", 2:"two", 3:"three", 4:"four", 5:"five",
+    ranksLongString = { ACE:"ace", ACE_LOW:"A",
+                        2:"two", 3:"three", 4:"four", 5:"five",
 			6:"six", 7:"seven", 8:"eight", 9:"nine", 10:"ten",
 			JACK:"jack", QUEEN:"queen", KING:"king" }
 
-    ranksPluralString = { ACE:"aces", 2:"twos", 3:"threes", 4:"fours",
+    ranksPluralString = { ACE:"aces", ACE_LOW:"aces",
+                          2:"twos", 3:"threes", 4:"fours",
 			  5:"fives", 6:"sixes", 7:"sevens", 8:"eights",
 			  9:"nines", 10:"tens", JACK:"jacks",
 			  QUEEN:"queens", KING:"kings" }
 
-    # Should aces be considered as low
-    acesLow = False
 
     def __init__(self, value):
 	# At this point self has already been set
 	if Rank.ranks.count(self) == 0:
-	    raise BadRankException("Invalid value %d" % value)
+	    raise BadRankException("Invalid rank value %d" % value)
 
     def fromString(string):
 	char = string.upper()
+        # Special case "A" to it doesn't become ACE_LOW
+        if char == "A":
+            return Rank(Rank.ACE)
 	for key in Rank.ranksShortString.keys():
 	    if Rank.ranksShortString[key] == char:
 		break
@@ -160,47 +166,6 @@ class Rank(int):
 
     def pluralString(self):
 	return self.ranksPluralString[self]
-
-    def getAcesLow(cls):
-	"""Return True if Aces are low, False otherwise."""
-	return cls.acesLow
-
-    getAcesLow = classmethod(getAcesLow)
-
-    def setAcesLow(cls, bool):
-	"""Set Aces low if bool == True, high otherwise."""
-	if bool:
-	    cls.acesAreLow()
-	else:
-	    cls.acesAreHigh()
-
-    setAcesLow = classmethod(setAcesLow)
-
-    def acesAreLow(cls):
-	"""Set Aces to be low."""
-	cls.acesLow = True
-
-    acesAreLow = classmethod(acesAreLow)
-
-    def acesAreHigh(cls):
-	"""Set Aces to be high."""
-	cls.acesLow = False
-
-    acesAreHigh = classmethod(acesAreHigh)
-
-    def __cmp__(self, other):
-	if (self.acesLow):
-	    if int.__cmp__(self, self.ACE) == 0:
-		selfValue = self.ACE_LOW
-	    else:
-		selfValue = self
-	    if int.__cmp__(other, self.ACE) == 0:
-		otherValue = self.ACE_LOW
-	    else:
-		otherValue = other
-	    return int.__cmp__(selfValue, otherValue)
-	return int.__cmp__(self, other)
-
 
 ######################################################################
 
@@ -254,6 +219,16 @@ class Card:
 	import copy
 	return copy.copy(self)
 
+    def makeAcesLow(self):
+        """Make any ace low."""
+        if self.rank == Rank.ACE:
+            self.rank = Rank(Rank.ACE_LOW)
+
+    def makeAcesHigh(self):
+        """Make any ace high."""
+        if self.rank == Rank.ACE_LOW:
+            self.rank = Rank(Rank.ACE)
+
 ######################################################################
 #
 # Cards Object
@@ -302,6 +277,16 @@ class Cards(list):
 	list.sort(self)
 	list.reverse(self)
 
+    def makeAcesLow(self):
+        """Make aces low."""
+        for card in self:
+            card.makeAcesLow()
+
+    def makeAcesHigh(self):
+        """Make aces high."""
+        for card in self:
+            card.makeAcesHigh()
+
     def str(self):
 	return self.__str__()
 
@@ -346,7 +331,7 @@ class Cards(list):
     def countRanks(self):
 	"""Return an array containing a count of how often each rank appears."""
 	count = [0] * (Rank.ACE + 1)
-	for rank in range(Rank.ACE, Rank.TWO-1, -1):
+	for rank in Rank.ranks:
 	    count[rank] = self.rankCount(rank)
 	return count
 
