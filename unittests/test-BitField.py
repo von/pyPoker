@@ -6,12 +6,26 @@ import unittest
 
 class TestBitField(unittest.TestCase):
 
+    # Value of a bitfield completely set to ones
+    fullMask = 2**32 - 1
+
     def testCreate(self):
         """Test basic BitField creation."""
         zero = BitField(0)
         one = BitField(1)
         thousand = BitField(1000)
         
+    def testMask(self):
+        """Test mask() method."""
+        m = BitField.mask(numBits=4)
+        self.assertEqual(m, 15, "mask value is %s" % m)
+        m = BitField.mask(numBits=2, offset=3)
+        self.assertEqual(m, 24, "mask value is %s" % m)
+        m = BitField.mask(numBits=7, offset=1)
+        self.assertEqual(m, 254, "mask value is %s" % m)
+        m = BitField.mask(numBits=2, offset=10)
+        self.assertEqual(m, 3072, "mask value is %s" % m)
+
     def testComparsion(self):
         """Test BitField comparison methods."""
         self.assertEqual(BitField(0), 0)
@@ -60,6 +74,28 @@ class TestBitField(unittest.TestCase):
         value.setBit(7)
         self.assertEqual(value, 138, "Value is %s" % value)
  
+    def testSetBitRange(self):
+        """Test setBitRange() method."""
+        value = BitField(128)
+        value.setBitRange(numBits=4)
+        self.assertEqual(value, 128+15, "Value is %s" % value)
+        value = BitField(15)
+        value.setBitRange(offset = 3, numBits=5, value=31)
+        self.assertEqual(value, 255, "Value is %s" % value)
+        value = BitField(0)
+        value.setBitRange(offset = 4, numBits=1, value = 255)
+        self.assertEqual(value, 16, "Value is %s" % value)
+        value = BitField(255)
+        value.setBitRange(offset = 0, numBits=8, value = 179)
+        self.assertEqual(value, 179, "Value is %s" % value)
+
+    def testGetBitRange(self):
+        """Test getBitRange() method."""
+        value = BitField(15)
+        self.assertEqual(value.getBitRange(numBits=3), 7)
+        self.assertEqual(value.getBitRange(numBits=5, offset=3, shift=True), 1)
+        self.assertEqual(value.getBitRange(numBits=2, offset=2, shift=True), 3)
+
     def testClearBit(self):
         """Test clearBit() method."""
         value = BitField(65)
@@ -106,6 +142,14 @@ class TestBitField(unittest.TestCase):
         """Test right shift."""
         value = BitField(194) >> 1
         self.assertEqual(value, 97, "Value is %s" % value)
-        
+
+    def testInvert(self):
+        """Test inversion operator."""
+        value = ~BitField(15)
+        self.assertEqual(value, self.fullMask - 15, "Value is %s" % value)
+        value = BitField(255)
+        value.invert()
+        self.assertEqual(value, self.fullMask - 255, "Value is %s" % value)
+
 if __name__ == "__main__":
     unittest.main()
