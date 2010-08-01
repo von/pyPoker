@@ -9,6 +9,7 @@
 #
 ######################################################################
 
+from BitField import BitField
 from PokerException import PokerException, PokerInternalException
 from Cards import Card, Cards, Rank, Suit
 from Hand import CommunityCardHand
@@ -28,7 +29,15 @@ class IncompleteHandException(PokerException):
 # PokerRank
 #
 
-class PokerRankBase:
+class PokerRankBase(BitField):
+    # Poker rank is a bitfield that looks like the following (each field
+    # is a 4 bit nibble):
+    #   -- Type PrimaryRank SecondaryRank Kicker1 Kicker2 Kicker3 Kicker4
+    #
+    # This is based on the strategy at:
+    # See http://cowboyprogramming.com/2007/01/04/programming-poker-ai
+    # With the modication that I have 4 kickers (for high card)
+
     HIGH_CARD = 0
     PAIR = 1
     TWO_PAIR = 2
@@ -44,6 +53,15 @@ class PokerRankBase:
     BOAT = FULL_HOUSE
     QUADS = FOUR_OF_A_KIND
 
+    # Offsets into BitField
+    TYPE_OFFSET = 24
+    PRIMARY_CARD_OFFSET =  20
+    SECONDARY_CARD_OFFSET = 16
+    FIRST_KICKER_OFFSET = 12
+    SECOND_KICKER_OFFSET = 8
+    THIRD_KICKER_OFFSET = 4
+    FOURTH_KICKER_OFFSET = 0
+
     handRankTemplates = [
 	"High Card $primaryRank",
 	"Pair of $primaryRankPlural",
@@ -58,84 +76,92 @@ class PokerRankBase:
 
     def __init__(self, rankValue=None, primaryCard=None,
 		 secondaryCard=None, kickers=None):
-	self.rank = rankValue
-	if isinstance(primaryCard, int):
-	    primaryCard = Rank(primaryCard)
-	self.primaryCard = primaryCard
-	if isinstance(secondaryCard, int):
-	    secondaryCard = Rank(secondaryCard)
-	self.secondaryCard = secondaryCard
-	self.kickers = kickers
+        BitField.__init__(self, value = 0, length=32)
+        if rankValue:
+            self.setType(rankValue)
+        if primaryCard:
+            self.setPrimaryCardRank(primaryCard)
+        if secondaryCard:
+            self.setSecondaryCardRank(secondaryCard)
+        if kickers:
+            self.setKickers(kickers)
 
+    @staticmethod
     def straightFlush(rank):
 	return PokerRankBase(PokerRankBase.STRAIGHT_FLUSH, rank, None, None)
 
-    straightFlush = staticmethod(straightFlush)
-
+    @staticmethod
     def quads(rank, kickers):
 	return PokerRankBase(PokerRankBase.QUADS, rank, None, kickers)
 
-    quads = staticmethod(quads)
-
+    @staticmethod
     def fullHouse(primaryRank, secondaryRank):
 	return PokerRankBase(PokerRankBase.BOAT,
 			     primaryRank,
 			     secondaryRank,
 			     None)
 
-    fullHouse = staticmethod(fullHouse)
-
+    @staticmethod
     def flush(rank, kickers):
 	return PokerRankBase(PokerRankBase.FLUSH, rank, None, kickers)
 
-    flush = staticmethod(flush)
-
+    @staticmethod
     def straight(rank):
 	return PokerRankBase(PokerRankBase.STRAIGHT, rank, None, None)
 
-    straight = staticmethod(straight)
-
+    @staticmethod
     def trips(rank, kickers):
 	return PokerRankBase(PokerRankBase.TRIPS, rank, None, kickers)
 
-    trips = staticmethod(trips)
-
+    @staticmethod
     def twoPair(primaryRank, secondaryRank, kickers):
 	return PokerRankBase(PokerRankBase.TWO_PAIR,
 			     primaryRank,
 			     secondaryRank,
 			     kickers)
 
-    twoPair = staticmethod(twoPair)
-
+    @staticmethod
     def pair(rank, kickers):
 	return PokerRankBase(PokerRankBase.PAIR, rank, None, kickers)
 
-    pair = staticmethod(pair)
-
+    @staticmethod
     def highCard(rank, kickers):
 	return PokerRankBase(PokerRankBase.HIGH_CARD, rank, None, kickers)
 
-    highCard = staticmethod(highCard)
-
     def __str__(self):
-	if self.rank is None:
+	if self.value == 0:
 	    raise PokerException("Tried to convert uninitialized PokerRank to string.")
+        type = self.getType()
 	try:
-	    template = self.handRankTemplates[self.rank]
+	    template = self.handRankTemplates[type]
 	except:
-	    raise PokerException("Unknown rank %d" % self.rank)
+	    raise PokerException("Unknown rank %d" % type)
 	from string import Template
 	s = Template(template)
-	d = dict(primaryRank=self.primaryCard.longString(),
-		 primaryRankPlural=self.primaryCard.pluralString())
-	if self.secondaryCard:
-	    d['secondaryRank']=self.secondaryCard.longString()
-	    d['secondaryRankPlural']=self.secondaryCard.pluralString()
+        primaryRank = self.getPrimaryCardRank()
+	d = dict(primaryRank=primaryRank.longString(),
+		 primaryRankPlural=primaryRank.pluralString())
+        secondaryRank = self.getSecondaryCardRank()
+	if secondaryRank:
+	    d['secondaryRank']=secondaryRank.longString()
+	    d['secondaryRankPlural']=secondaryRank.pluralString()
 	return s.substitute(d)
 
+    def debugString(self):
+        """Return descriptive string for debugging."""
+        string = "%0X" % self.value
+        if self.value:
+            string += ":" + self.__str__()
+        string += ":kickers " + self.kickersAsString()
+        return string
+
     def kickersAsString(self):
-	return str(self.kickers)
+        kickers = self.getKickerRanks()
+        string = ''
+        for kicker in kickers:
+            if kicker:
+                string = string + str(kicker) + ' '
+	return string
 
     def __cmp__(self, other):
 	if other is None:
@@ -143,36 +169,102 @@ class PokerRankBase:
 	    return 1
 	# Allow comparison of PokerRank object and integer
 	if isinstance(other, int):
-	    return cmp(self.rank, other)
+	    return cmp(self.getType(), other)
 	assertInstance(other, PokerRankBase)
-	if self.rank != other.rank:
-	    return cmp(self.rank, other.rank)
-	if self.primaryCard != other.primaryCard:
-	    return cmp(self.primaryCard, other.primaryCard)
-	if self.secondaryCard != other.secondaryCard:
-	    return cmp(self.secondaryCard, other.secondaryCard)
-	if self.kickers is not None:
-	    for i in range(0, len(self.kickers)):
-		# I seem to have an occassional exception here, so debug
-		try:
-		    if self.kickers[i] != other.kickers[i]:
-			return cmp(self.kickers[i], other.kickers[i])
-		except:
-		    string = "Caught bad kicker comparison (i=%d/rank is %s)." % (i, str(self))
-		    if self.kickers:
-			string += "\nself.kickers = %s" % self.kickers
-		    if other.kickers:
-			string += "\nother.kickers = %s" % other.kickers
-		    raise PokerInternalException("Bad kicker comparison\n" + string)
-	# Truly equal
-	return 0
+        return cmp(self.value, other.value)
+
+    # Override methods set by BitField
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
+
+    def __ne__(self, other):
+        return self.__cmp__(other) != 0
+
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+
+    def __le__(self, other):
+        return self.__cmp__(other) <= 0
+
+    def __gt__(self, other):
+        return self.__cmp__(other) > 0
+
+    def __ge__(self, other):
+        return self.__cmp__(other) >= 0
 
     def _setEqual(self, otherRank):
 	"""This this rank equal to provided rank."""
-	self.rank = otherRank.rank
-	self.primaryCard = otherRank.primaryCard
-	self.secondaryCard = otherRank.secondaryCard
-	self.kickers = otherRank.kickers
+	self.value = otherRank.value
+
+    # Get/Set functions for bit fields
+    def setType(self, type):
+        """Set the type (e.g. FULL_HOUSE, STRAIGHT) of this instance."""
+        self.setBitRange(numBits = 4, value=type, offset=self.TYPE_OFFSET)
+
+    def getType(self):
+        """Return the type of this instance as an integer."""
+        return self.getBitRange(numBits = 4, offset=self.TYPE_OFFSET, shift=True)
+
+    def setPrimaryCardRank(self, rank):
+        """Set the rank of the primary card."""
+        if isinstance(rank, Card):
+            rank = rank.rank
+        self.setBitRange(numBits=4,
+                         value=rank,
+                         offset=self.PRIMARY_CARD_OFFSET)
+
+    def getPrimaryCardRank(self):
+        """Get the rank of the primary card.
+
+        Returns None if no rank defined."""
+        value = self.getBitRange(numBits = 4,
+                                 offset=self.PRIMARY_CARD_OFFSET,
+                                 shift=True)
+        if not value:
+            return None
+        return Rank(value)
+
+    def setSecondaryCardRank(self, rank):
+        """Set the rank of the secondary card (e.g. the pair in a full house)."""
+        if isinstance(rank, Card):
+            rank = rank.rank
+        self.setBitRange(numBits = 4,
+                         value=rank,
+                         offset=self.SECONDARY_CARD_OFFSET)
+
+    def getSecondaryCardRank(self):
+        """Get the rank of the secodary card (e.g. the pair in a full house).
+
+        Returns None if no rank defined."""
+        value = self.getBitRange(numBits = 4,
+                                 offset=self.SECONDARY_CARD_OFFSET,
+                                 shift=True)
+        if not value:
+            return None
+        return Rank(value)
+
+    def setKickers(self, kickers):
+        """Set (up to 4) kickers."""
+        offset = self.FIRST_KICKER_OFFSET
+        for kicker in kickers:
+            self.setBitRange(numBits = 4,
+                             offset=offset,
+                             value=kicker.rank)
+            offset -= 4
+
+    def getKickerRanks(self):
+        """Return an array with ranks of kickers."""
+        kickers = []
+        offset = self.FIRST_KICKER_OFFSET
+        while offset >= 0:
+            value = self.getBitRange(numBits=4,
+                                     offset=offset,
+                                     shift=True)
+            if value == 0:
+                break
+            kickers.append(Rank(value))
+            offset -= 4
+        return kickers
 
 ######################################################################
 #
@@ -189,7 +281,7 @@ class PokerRank(PokerRankBase):
 		rank = self.__getRankSixPlusCards(cards)
 	    else:
 		rank = self.__getRankFiveCards(cards)
-	    if (self.rank is None) or (cmp(self, rank) < 0):
+	    if self < rank:
 		self._setEqual(rank)
 
     def __getRankFiveCards(self, cards):
@@ -344,17 +436,19 @@ class PokerLowRank(PokerRankBase):
     
     def __init__(self, hand):
 	assertInstance(hand, Cards)
-	PokerRankBase.__init__(self, None, None, None, None)
+        # Start with highest possible rank and work down
+	PokerRankBase.__init__(self, PokerRankBase.STRAIGHT_FLUSH, Rank.ACE, None, None)
 	self.hand = hand
         self.hand.makeAcesLow()
 	for cards in hand.hands():
 	    rank = self.__getLowRank(cards)
-	    if (self.rank is None) or (cmp(self, rank) > 0):
+	    if rank < self:
 		self._setEqual(rank)
 
     def isEightOrBetter(self):
 	"""Does rank qualify for eight or better low?"""
-	return (self.rank == PokerRank.HIGH_CARD) and (self.primaryCard <= 8)
+	return ((self.getType() == PokerRank.HIGH_CARD) and
+                (self.getPrimaryCardRank() <= 8))
 
     def __getLowRank(self, cards):
 	"""Find lowest rank of given cards ignoring straights and flushes."""

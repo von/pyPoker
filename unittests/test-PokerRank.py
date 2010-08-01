@@ -6,16 +6,37 @@
 # $Id$
 ######################################################################
 
-from pyPoker.Cards import Rank
+from pyPoker.Cards import Rank, Cards
 from pyPoker.Hand import Hand, Board, OmahaHand, HoldEmHand
 from pyPoker.Hands import Hands
-from pyPoker.PokerRank import PokerRank, PokerLowRank
+from pyPoker.PokerRank import PokerRankBase, PokerRank, PokerLowRank
 import unittest
 
 class TestSequenceFunctions(unittest.TestCase):
 
     def setUp(self):
 	pass
+
+    def testCreation(self):
+        """Test basic creation of PokerRankBase."""
+        kickers = Cards.fromString("JC 8D 4S")
+        rank = PokerRankBase(PokerRank.PAIR, primaryCard=Rank.KING,
+                             kickers=kickers)
+        type = rank.getType()
+        self.assertEqual(type, PokerRank.PAIR,
+                         "rank = (%s) %d != PAIR" % (str(type), type))
+        primaryRank = rank.getPrimaryCardRank()
+        self.assertEqual(primaryRank, Rank.KING,
+                         "primary rank = %s (%d) != KING" % (str(primaryRank),
+                                                             primaryRank))
+        secondaryRank = rank.getSecondaryCardRank()
+        # Manual test here, otherwise string creation fails on sucess
+        if secondaryRank is not None:
+            self.fail("rank = %s (%d) != None" % (str(secondaryRank),
+                                                  secondaryRank))
+        kickerRanks = rank.getKickerRanks()
+        for i, card in enumerate(kickers):
+            self.assertEqual(card.rank, kickerRanks[i])
 
     def testBoard(self):
 	"""Verify ranking with board."""
@@ -35,11 +56,22 @@ class TestSequenceFunctions(unittest.TestCase):
 	"""Verify ranking for low hand."""
 	rank = PokerLowRank(Hand.fromString("AS 8C 7S 4D 3H"))
 	self.assertEqual(rank, PokerRank.HIGH_CARD, "%s != HIGH_CARD" % rank)
-	self.assertEqual(rank.primaryCard, Rank.EIGHT,
-			 "%s != 8, kickers = %s" % (rank.primaryCard,
-						    rank.kickers))
+	self.assertEqual(rank.getPrimaryCardRank(), Rank.EIGHT,
+			 "%s != 8, kickers = %s" % (rank.getPrimaryCardRank(),
+						    rank.kickersAsString()))
 	self.assertEqual(rank.isEightOrBetter(), True,
 			 "\"%s\".isEightOrBetter() != True" % rank)
+        kickers = rank.getKickerRanks()
+        self.assertEqual(len(kickers), 4,
+                         "len(kickers) = %d != 4" % len(kickers))
+        self.assertEqual(kickers[0], Rank.SEVEN,
+                         "kickers[0] = %s != SEVEN" % kickers[0])
+        self.assertEqual(kickers[1], Rank.FOUR,
+                         "kickers[1] = %s != FOUR" % kickers[1])
+        self.assertEqual(kickers[2], Rank.THREE,
+                         "kickers[2] = %s != THREE" % kickers[2])
+        self.assertEqual(kickers[3], Rank.ACE_LOW,
+                         "kickers[3] = %s != ACE (low)" % kickers[3])
 
     def testRanking(self):
 	"""Test basic hand ranking."""
@@ -133,7 +165,7 @@ class TestSequenceFunctions(unittest.TestCase):
 		"KC TS 9D 6H 2C",
 		# King-high
 		"KS JS TS 7S 3S",
-		# King-high
+		# King-high (ace is low)
 		"AS KC QD JC TS",
 		# King-high
 		"KS QS JS TS 9S",
@@ -173,18 +205,18 @@ class TestSequenceFunctions(unittest.TestCase):
 		if (i < j):
 		    self.assert_(ranks[i] < ranks[j],
 				 "!(%d) %s (%s) < (%d) %s (%s)" %
-				 ( i, hands[i], ranks[i],
-				   j, hands[j], ranks[j]))
+				 ( i, hands[i], ranks[i].debugString(),
+				   j, hands[j], ranks[j].debugString()))
 		elif (i > j):
 		    self.assert_(ranks[i] > ranks[j],
 				 "!(%d) %s (%s) > (%d) %s (%s)" %
-				 ( i, hands[i], ranks[i],
-				   j, hands[j], ranks[j]))
+				 ( i, hands[i], ranks[i].debugString(),
+				   j, hands[j], ranks[j].debugString()))
 		else:
 		    self.assertEqual(ranks[i], ranks[j],
 				     "(%d) %s (%s) != (%d) %s (%s)" %
-				     ( i, hands[i], ranks[i],
-				       j, hands[j], ranks[j]))
+				     ( i, hands[i], ranks[i].debugString(),
+				       j, hands[j], ranks[j].debugString()))
 				 
     def testOmaha(self):
 	"""Test basic Omaha hand ranking."""
@@ -193,10 +225,10 @@ class TestSequenceFunctions(unittest.TestCase):
 	hand.setBoard(board)
 	rank = PokerRank(hand)
 	self.assertEqual(rank, PokerRank.TWO_PAIR, "rank = %s" % rank)
-	self.assertEqual(rank.primaryCard, Rank.ACE,
-			 "primaryCard = %s" % rank.primaryCard )
-	self.assertEqual(rank.secondaryCard, Rank.TEN,
-			 "secondaryCard = %s" % rank.secondaryCard)
+	self.assertEqual(rank.getPrimaryCardRank(), Rank.ACE,
+			 "primaryCard = %s" % rank.getPrimaryCardRank())
+	self.assertEqual(rank.getSecondaryCardRank(), Rank.TEN,
+			 "secondaryCard = %s" % rank.getSecondaryCardRank())
 
     def testOmahaLow(self):
 	"""Test Omaha low hand ranking."""
@@ -205,9 +237,9 @@ class TestSequenceFunctions(unittest.TestCase):
 	hand.setBoard(board)
 	rank = PokerLowRank(hand)
 	self.assertEqual(rank, PokerRank.HIGH_CARD, "rank = %s" % rank)
-	self.assertEqual(rank.primaryCard, Rank.EIGHT,
-			 "primaryCard = %s kickers = %s" % (rank.primaryCard,
-							    rank.kickers))
+	self.assertEqual(rank.getPrimaryCardRank(), Rank.EIGHT,
+			 "primaryCard = %s kickers = %s" % (rank.getPrimaryCardRank(),
+							    rank.kickersAsString()))
 
     def testOmahaLow2(self):
 	"""Test Omaha low hand ranking."""
@@ -216,9 +248,9 @@ class TestSequenceFunctions(unittest.TestCase):
 	hand.setBoard(board)
 	rank = PokerLowRank(hand)
 	self.assertEqual(rank, PokerRank.HIGH_CARD, "rank = %s" % rank)
-	self.assertEqual(rank.primaryCard, Rank.EIGHT,
-			 "primaryCard = %s kickers = %s" % (rank.primaryCard,
-							    rank.kickers))
+	self.assertEqual(rank.getPrimaryCardRank(), Rank.EIGHT,
+			 "primaryCard = %s kickers = %s" % (rank.getPrimaryCardRank(),
+							    rank.kickersAsString()))
 
 if __name__ == "__main__":
     unittest.main()
