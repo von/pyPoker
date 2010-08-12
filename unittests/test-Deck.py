@@ -18,6 +18,7 @@ class TestSequenceFunctions(unittest.TestCase):
     def testDesk(self):
 	"""Test basic deck construction and shuffling."""
 	deck = Deck()
+        self.assertEqual(len(deck), 52, "Deck has %d cards!" % len(deck))
 	deck.shuffle()
 	deck.reset()
 
