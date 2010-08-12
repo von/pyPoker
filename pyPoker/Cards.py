@@ -107,7 +107,11 @@ class Rank(int):
     KING = 13
     ACE = 14
     
-    ranks = range(ACE_LOW, ACE + 1)
+    # Actual ranks
+    ranks = range(TWO, ACE + 1)
+
+    # Whole range of ranks, include ACE_LOW
+    rankRange = range(ACE_LOW, ACE + 1)
 
     ranksShortString = { ACE:"A", ACE_LOW:"A",
                          2:"2", 3:"3", 4:"4", 5:"5", 6:"6",
@@ -128,7 +132,7 @@ class Rank(int):
 
     def __init__(self, value):
 	# At this point self has already been set
-	if Rank.ranks.count(self) == 0:
+	if Rank.rankRange.count(self) == 0:
 	    raise BadRankException("Invalid rank value %d" % value)
 
     def fromString(string):
