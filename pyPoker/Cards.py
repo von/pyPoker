@@ -331,8 +331,8 @@ class Cards(list):
     def countRanks(self):
 	"""Return an array containing a count of how often each rank appears."""
 	count = [0] * (Rank.ACE + 1)
-	for rank in Rank.ranks:
-	    count[rank] = self.rankCount(rank)
+        for card in self:
+            count[card.rank] += 1
 	return count
 
     def removeRank(self, rank):
