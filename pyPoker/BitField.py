@@ -47,18 +47,56 @@ class BitField:
         justLow = (self.value & -self.value)
         return shiftsUntilZero(justLow) - 1
 
+    def lowestNSet(self, n):
+        """Reutrns array of offsets of lowest n bits set.
+
+        Array will be ordered from high to low.
+        If value has less than n bits set, returns array of less than length n."""
+        if (n == 0) or (self.value == 0):
+            return []
+        bits = []
+        offset = 0
+        value = self.value
+        while ((n > 0) & (value > 0)):
+            if value & 0x01:
+                bits.insert(0, offset)
+                n -= 1
+            value >>= 1
+            offset += 1
+        return bits
+
     def highestSet(self):
         """Returns offset of highest bit set.
 
         if value is zero, a ValueError is thrown."""
         if self.value == 0:
-            raise ValueError("Tried to determine lowest bit of zero.")
+            raise ValueError("Tried to determine highest bit of zero.")
         return shiftsUntilZero(self.value) - 1
+
+    def highestNSet(self, n):
+        """Return array of offsets of highest n bits set.
+
+        Array will be ordered from high to low.
+        If value has less than n bits set, returns array of less than length n."""
+        if (n == 0) or (self.value == 0):
+            return []
+        highestOffset = self.highestSet()
+        bits = [highestOffset]
+        offset = highestOffset - 1
+        while ((len(bits) < n) & (offset >= 0)):
+            if self.testBit(offset):
+                bits.append(offset)
+            offset -= 1
+        return bits        
 
     def testBit(self, offset):
         """Return True if bit at given offset is set."""
         mask = 1 << offset
         return (self.value & mask != 0)
+
+    def testBits(self, bitfield):
+        """Return True if all bits in bitfield are set."""
+        return (self.value & bitfield == bitfield)
 
     def setBit(self, offset):
         """Set bit at given offset."""
@@ -90,7 +128,7 @@ class BitField:
         """Clear bit at given offset."""
         self.value &= ~(1 << offset)
 
-    def clearBits(self, numBits, offset=0):
+    def clearBitRange(self, numBits, offset=0):
         """Clear numbBits at offset."""
         if numBits == 0:
             return
@@ -110,6 +148,10 @@ class BitField:
         """Invert all bits."""
         mask = 2**self.length - 1
         self.value ^= mask
+
+    def toInt(self):
+        """Return value of BitField as integer."""
+        return self.value
 
     def __str__(self):
         """Return binary string presentation.

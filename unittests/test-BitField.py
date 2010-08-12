@@ -50,12 +50,34 @@ class TestBitField(unittest.TestCase):
         self.assertEquals(BitField(6).lowestSet(), 1)
         self.assertEquals(BitField(96).lowestSet(), 5)
 
+    def testLowestNSet(self):
+        """Test lowestNSet() method."""
+        # assertListEqual() is new in 2.7
+        self.assertListEqual(BitField(1).lowestNSet(0), [])
+        self.assertListEqual(BitField(1).lowestNSet(1), [0])
+        self.assertListEqual(BitField(1).lowestNSet(2), [0])
+        self.assertListEqual(BitField(255).lowestNSet(3), [2,1,0])
+        self.assertListEqual(BitField(255).lowestNSet(8), [7,6,5,4,3,2,1,0])
+        self.assertListEqual(BitField(167).lowestNSet(2), [1,0])
+        self.assertListEqual(BitField(167).lowestNSet(4), [5,2,1,0])
+
     def testHighestSet(self):
         """Test highestSet() method."""
         self.assertRaises(ValueError, BitField(0).highestSet)
         self.assertEquals(BitField(1).highestSet(), 0)
         self.assertEquals(BitField(6).highestSet(), 2)
         self.assertEquals(BitField(96).highestSet(), 6)
+
+    def testHighestNSet(self):
+        """Test highestNSet() method."""
+        # assertListEqual() is new in 2.7
+        self.assertListEqual(BitField(1).highestNSet(0), [])
+        self.assertListEqual(BitField(1).highestNSet(1), [0])
+        self.assertListEqual(BitField(1).highestNSet(2), [0])
+        self.assertListEqual(BitField(255).highestNSet(3), [7,6,5])
+        self.assertListEqual(BitField(255).highestNSet(8), [7,6,5,4,3,2,1,0])
+        self.assertListEqual(BitField(167).highestNSet(2), [7,5])
+        self.assertListEqual(BitField(167).highestNSet(3), [7,5,2])
 
     def testTestBit(self):
         """Test testBit() method."""
@@ -64,6 +86,14 @@ class TestBitField(unittest.TestCase):
         self.assertFalse(value.testBit(1), "Value is %s" % value)
         self.assertTrue(value.testBit(7), "Value is %s" % value)
         self.assertFalse(value.testBit(8), "Value is %s" % value)
+
+    def testTestBits(self):
+        """Test testBits() method."""
+        value = BitField(15)
+        self.assertTrue(value.testBits(7), "Value is %s" % value)
+        self.assertFalse(value.testBits(24), "Value is %s" % value)
+        self.assertTrue(value.testBits(15), "Value is %s" % value)
+        self.assertFalse(value.testBits(31), "Value is %s" % value)
 
     def testSetBit(self):
         """Test setBit() method."""
