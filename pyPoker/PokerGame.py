@@ -15,7 +15,8 @@ from Hands import Hands
 from Cards import Cards
 from Deck import Deck
 from Utils import assertInstance
-from PokerRank import PokerRank, PokerLowRank
+from Ranker import Ranker
+from LowRanker import LowRanker
 from HandGenerator import HandGenerator
 
 ######################################################################
@@ -51,8 +52,12 @@ class PokerGame:
 
     # Class to use to determine rank for hi and/or low
     # If == None then no winner in that direction.
-    highHandRankClass = PokerRank
-    lowHandRankClass = None
+    highHandRankerClass = Ranker
+    lowHandRankerClass = None
+
+    # Ranker instances to use to determine hand ranks
+    highHandRanker = None
+    lowHandRanker = None
 
     # Low hand must be eight or berrer?
     lowHandEightOrBetter = False
@@ -97,8 +102,12 @@ class PokerGame:
 	    raise TooManyHandsException
 	self.numHands = numHands
 	self.hands = Hands()
-	self.lowHandsWin = (self.lowHandRankClass != None)
-	self.highHandsWin = (self.highHandRankClass != None)
+	self.lowHandsWin = (self.lowHandRankerClass != None)
+        if self.lowHandRankerClass:
+            self.lowHandRanker = self.lowHandRankerClass()
+	self.highHandsWin = (self.highHandRankerClass != None)
+        if self.highHandRankerClass:
+            self.highHandRanker = self.highHandRankerClass()
 	self.highWins = []
 	self.lowWins = []
 	self.scoops = []
@@ -281,9 +290,9 @@ class PokerGame:
 
     def _findHighHands(self, hands, board):
 	highWinners = [ 0 ]
-	bestHighRank = self.highHandRankClass(hands[0])
+	bestHighRank = self.highHandRanker.rankHand(hands[0])
 	for index in range(1,len(hands)):
-	    rank = self.highHandRankClass(hands[index])
+	    rank = self.highHandRanker.rankHand(hands[index])
 	    if rank == bestHighRank:
 		highWinners.append(index)
 	    elif rank > bestHighRank:
@@ -305,9 +314,9 @@ class PokerGame:
 		(hand.eightLowPossible() is False)):
 		# Hand cannot qualify for low, don't bother checking
 		continue
-	    rank = self.lowHandRankClass(hand)
+	    rank = self.lowHandRanker.rankHand(hand)
 	    if (self.lowHandEightOrBetter and
-		(not rank.isEightOrBetter())):
+		(not rank.isEightOrBetterLow())):
 		# Hand did not qualify for low
 		continue
 	    if ((bestLowRank is None) or
@@ -392,7 +401,7 @@ class FiveCardStudGame(PokerGame):
     gameName = "Five-card Stud"
 
 class FiveCardStudHiLoGame(FiveCardStudGame):
-    lowHandRankClass = PokerLowRank
+    lowHandRankerClass = LowRanker
     gameName = "Five-card Stud Hi/Lo"
 
 class SevenCardStudGame(PokerGame):
@@ -400,7 +409,7 @@ class SevenCardStudGame(PokerGame):
     gameName = "Seven-card Stud"
 
 class SevenCardStudHiLoGame(SevenCardStudGame):
-    lowHandRankClass = PokerLowRank
+    lowHandRankerClass = LowRanker
     gameName = "Seven-card Stud Hi/Lo"
 
 class OmahaGame(CommunityCardPokerGame):
@@ -408,7 +417,7 @@ class OmahaGame(CommunityCardPokerGame):
     gameName = "Omaha"
 
 class OmahaHiLoGame(OmahaGame):
-    lowHandRankClass = PokerLowRank
+    lowHandRankerClass = LowRanker
     lowHandEightOrBetter = True
     gameName = "Omaha Hi/Lo 8-or-better"
 

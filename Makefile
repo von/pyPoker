@@ -67,9 +67,11 @@ UNITTESTS = \
 	test-Deck \
 	test-Hand \
 	test-Hands \
+	test-LowRanker \
 	test-PokerRank \
 	test-HandGenerator \
-	test-PokerGame
+	test-PokerGame \
+	test-Ranker
 
 unittests: $(UNITTESTS)
 

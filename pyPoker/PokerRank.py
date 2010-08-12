@@ -245,11 +245,18 @@ class PokerRankBase(BitField):
 
     def setKickers(self, kickers):
         """Set (up to 4) kickers."""
+        # We want highest kicker first
+        kickers.sort(reverse=True)
         offset = self.FIRST_KICKER_OFFSET
         for kicker in kickers:
+            # All for kicker to be both card or Rank
+            if isinstance(kicker, Card):
+                kickerRank = kicker.rank
+            else:
+                kickerRank = kicker
             self.setBitRange(numBits = 4,
                              offset=offset,
-                             value=kicker.rank)
+                             value=kickerRank)
             offset -= 4
 
     def getKickerRanks(self):
@@ -265,6 +272,11 @@ class PokerRankBase(BitField):
             kickers.append(Rank(value))
             offset -= 4
         return kickers
+
+    def isEightOrBetterLow(self):
+	"""Does rank qualify for eight or better low?"""
+	return ((self.getType() == PokerRank.HIGH_CARD) and
+                (self.getPrimaryCardRank() <= 8))
 
 ######################################################################
 #
