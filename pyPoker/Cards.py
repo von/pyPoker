@@ -272,10 +272,11 @@ class Cards(list):
 
     fromStrings = classmethod(fromStrings)
 
-    def sort(self):
-	"""Sort cards so they are high to low."""
-	list.sort(self)
-	list.reverse(self)
+    def sort(self, reverse=False):
+	"""Sort cards so they are low to high.
+
+        If reverse is True, sort from high to low."""
+	list.sort(self, reverse=reverse)
 
     def makeAcesLow(self):
         """Make aces low."""
