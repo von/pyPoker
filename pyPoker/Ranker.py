@@ -80,6 +80,25 @@ class RankerBase:
                 return rank
         return None
 
+    @classmethod
+    def _isStraight(cls, cards):
+        """Does the given five sorted cards represent a straight?
+
+        Returns Rank of straight or None if not a straight."""
+        if ((cards[1].rank == (cards[0].rank - 1)) and
+            (cards[2].rank == (cards[1].rank - 1)) and
+            (cards[3].rank == (cards[2].rank - 1)) and
+            (cards[4].rank == (cards[3].rank - 1))):
+            return cards[0].rank
+        # Specical case for wheel with ACE high.
+        if ((cards[0].rank == Rank.ACE) and
+            (cards[1].rank == Rank.FIVE) and
+            (cards[2].rank == Rank.FOUR) and
+            (cards[3].rank == Rank.THREE) and
+            (cards[4].rank == Rank.TWO)):
+            return Rank.FIVE
+        return False
+
 class Ranker(RankerBase):
     """Given a Hand, return its PokerRank for its best high hand."""
 
@@ -93,10 +112,13 @@ class Ranker(RankerBase):
         # find the highest rank
         for cards in hand.hands():
             try:
-                rank = cls._rankHand(cards)
+                if len(cards) == 5:
+                    rank = cls._rankFiveCardHand(cards)
+                else:
+                    rank = cls._rankSixOrSevenCardHand(cards)
             except Exception as e:
                 import sys
-                msg = "Error handing hand %s: %s" % (cards, e)
+                msg = "Error ranking hand %s: %s" % (cards, e)
                 raise PokerInternalException, msg, sys.exc_info()[2]
     
             if (highRank is None) or (rank > highRank):
@@ -104,11 +126,10 @@ class Ranker(RankerBase):
         return highRank
 
     @classmethod
-    def _rankHand(cls, cards):
-        """Given a set of cards, return a PokerRank for its best hand.
+    def _rankSixOrSevenCardHand(cls, cards):
+        """Given a set of 6 or 7 cards, return a PokerRank for its best hand.
 
-        Limited to 5-7 cards."""
-
+        Will work for 5 cards, but is less efficient than _rankFiveCardHand()."""
         if len(cards) > 7:
             raise ValueError("Hand has too many cards (%d > 7)" % len(cards))
         if len(cards) < 5:
@@ -197,3 +218,68 @@ class Ranker(RankerBase):
         bitfield.clearBit(highCard)
         kickers = bitfield.highestNSet(4)
         return PokerRank.highCard(highCard, kickers)
+
+    @classmethod
+    def _rankFiveCardHand(cls, cards):
+	"""Get rank of five cards. This method is more efficient than
+	_getRankSixPlusCards()."""
+	cards.sort(reverse=True)
+	isFlush = cards.sameSuit()
+	straightRank = cls._isStraight(cards)
+	# Do we have a straight flush?
+	if (straightRank and isFlush):
+	    return PokerRank.straightFlush(straightRank)
+	# Check for four of a kind
+	if (cards[0].rank == cards[1].rank == cards[2].rank == cards[3].rank):
+	    return PokerRank.quads(cards[0].rank, cards[4:])
+	if (cards[1].rank == cards[2].rank == cards[3].rank == cards[4].rank):
+	    return PokerRank.quads(cards[1].rank, cards[0:1])
+	# Check for full house
+	#   -First two and last two cards must match each other
+	#   -Then middle card either matches first two cards
+	#    or last two cards
+	if ((cards[0].rank == cards[1].rank) and
+	    (cards[3].rank == cards[4].rank)):
+	    if (cards[2].rank == cards[0].rank):
+		# XXXYY
+		return PokerRank.fullHouse(cards[0].rank, cards[3].rank)
+	    elif (cards[2].rank == cards[3].rank):
+		# XXYYY
+		return PokerRank.fullHouse(cards[2].rank, cards[0].rank)
+	# Check for flush, which we've already done
+	if isFlush:
+	    return PokerRank.flush(cards[0].rank, cards[1:])
+	# Check for Straight, which we've already done
+	if straightRank:
+	    return PokerRank.straight(straightRank)
+	# Check for trips
+	if ((cards[0].rank == cards[1].rank == cards[2].rank) or
+	    (cards[1].rank == cards[2].rank == cards[3].rank) or
+	    (cards[2].rank == cards[3].rank == cards[4].rank)):
+	    # cards[2] will always be one of the trips
+	    primaryRank = cards[2].rank
+	    cards.removeRank(primaryRank)
+	    return PokerRank.trips(primaryRank, cards)
+	# Check for two pair	    
+	# At this point we know we don't have trips, so can optimize some
+	if (cards[0].rank == cards[1].rank):
+	    if (cards[2].rank == cards[3].rank):
+		return PokerRank.twoPair(cards[0].rank, cards[2].rank, cards[4:])
+	    if (cards[3].rank == cards[4].rank):
+		return PokerRank.twoPair(cards[0].rank, cards[3].rank, cards[2:3])
+	elif ((cards[1].rank == cards[2].rank) and
+	      (cards[3].rank == cards[4].rank)):
+	    return PokerRank.twoPair(cards[1].rank, cards[3].rank, cards[0:1])
+	# Check for a pair
+	# At this point we know we don't have two pair or trips
+	foundPair = False
+	for index in range(4):
+	    if cards[index].rank == cards[index+1].rank:
+		foundPair = True
+		break
+	if foundPair:
+	    pairRank = cards[index].rank
+	    del cards[index:index+2]
+	    return PokerRank.pair(pairRank, cards)
+	# Just a high card
+	return PokerRank.highCard(cards[0].rank, cards[1:])
