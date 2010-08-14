@@ -56,6 +56,8 @@ def main(argv=None):
                       dest="showProgress", default=False, help="show progress")
     parser.add_option("-P", "--profile", type="string", dest="profile",
                       default=None, help="enable profiling")
+    parser.add_option("-q", "--quiet", action="store_true",
+                      dest="quiet", default=False, help="run quietly")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
                       default=False, help="show results of each hand")
 
@@ -123,7 +125,8 @@ def main(argv=None):
 
     if options.profile:
         import cProfile
-        print "Profiling to file %s" % options.profile
+        if options.verbose:
+            print "Profiling to file %s" % options.profile
         # Need to supply context here as run() will just use __main__
         cProfile.runctx(cmd, globals(), locals(), filename=options.profile)
     else:
@@ -132,7 +135,8 @@ def main(argv=None):
     if options.showProgress:
         print
 
-    print game.statsToString()
+    if not options.quiet:
+        print game.statsToString()
 
 if __name__ == "__main__":
     sys.exit(main())

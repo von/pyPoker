@@ -50,8 +50,10 @@ profile-snapshot:
 
 profiles:
 	@for game in $(GAME_SIMS) ; do \
-		echo Profiling $${game}: ;\
-		$(EXEC_PY) apps/poker-sim.py -g $${game} -P profile/$${game}.pstats || exit 1;\
+		echo -n Profiling $${game}: ;\
+		$(EXEC_PY) apps/poker-sim.py -q -g $${game} \
+			-P profile/$${game}.pstats || exit 1;\
+		$(EXEC_PY) profile/print-pstats.py -t profile/$${game}.pstats ;\
 	done
 
 ######################################################################
