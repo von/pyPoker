@@ -17,7 +17,8 @@ class RankerBase:
         bitfields[Suit.HEARTS] = BitField(0)
         bitfields[Suit.SPADES] = BitField(0)
         for card in hand:
-            bitfields[card.suit].setBit(card.rank)
+            # Set appropriate bit
+            bitfields[card.suit] += card.rank
         return bitfields
 
     @classmethod
@@ -25,7 +26,8 @@ class RankerBase:
         """Given a hand, return a BitField including what card ranks the hand contians."""
         bitfield = BitField()
         for card in hand:
-            bitfield.setBit(card.rank)
+            # Set appropriate bit
+            bitfield += card.rank
         return bitfield
 
     @classmethod
@@ -142,8 +144,7 @@ class Ranker(RankerBase):
         if quadsBitField.setCount() > 0:
             rank = quadsBitField.highestSet()
             # Highest remaining card is our kicker
-            bitfield.clearBit(rank)
-            kickerRank = bitfield.highestSet()
+            kickerRank = bitfield.filterBits(rank).highestSet()
             return PokerRank.quads(rank, [kickerRank])
             
         # Check for full house
@@ -160,8 +161,7 @@ class Ranker(RankerBase):
                     flushBitField = suitedBitFields[suit]
         if flushBitField:
             rank = flushBitField.highestSet()
-            flushBitField.clearBit(rank)
-            kickers = flushBitField.highestNSet(4)
+            kickers = flushBitField.filterBits(rank).highestNSet(4)
             return PokerRank.flush(rank, kickers)
 
         # Check for straight
@@ -173,27 +173,24 @@ class Ranker(RankerBase):
         # Check for trips
         if (tripsBitField > 0):
             rank = tripsBitField.highestSet()
-            bitfield.clearBit(rank)
+            kickers = bitfield.filterBits(rank).highestNSet(2)
             kickers = bitfield.highestNSet(2)
             return PokerRank.trips(rank, kickers)
 
         # Check for two pair
         if (pairsBitField.setCount() > 1):
             ranks = pairsBitField.highestNSet(2)
-            bitfield.clearBit(ranks[0])
-            bitfield.clearBit(ranks[1])
-            kicker = bitfield.highestSet()
+            kickers = bitfield.filterBits(ranks[0], ranks[1])
+            kicker = kickers.highestSet()
             return PokerRank.twoPair(ranks[0], ranks[1], [kicker])
 
         # Check for pair
         if (pairsBitField > 0):
             rank = pairsBitField.highestSet()
-            bitfield.clearBit(rank)
-            kickers = bitfield.highestNSet(3)
+            kickers = bitfield.filterBits(rank).highestNSet(3)
             return PokerRank.pair(rank, kickers)
 
         # High card
         highCard = bitfield.highestSet()
-        bitfield.clearBit(highCard)
-        kickers = bitfield.highestNSet(4)
+        kickers = bitfield.filterBits(highCard).highestNSet(4)
         return PokerRank.highCard(highCard, kickers)

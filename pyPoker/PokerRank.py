@@ -2,7 +2,7 @@
 #
 # PokerRank.py
 #
-# Class for calculating and hold a Hand's rank.
+# Class for representing a Hand's rank.
 #
 # vwelch@ncsa.uiuc.edu
 # $Id$
@@ -29,7 +29,7 @@ class IncompleteHandException(PokerException):
 # PokerRank
 #
 
-class PokerRankBase(BitField):
+class PokerRank(BitField):
     # Poker rank is a bitfield that looks like the following (each field
     # is a 4 bit nibble):
     #   -- Type PrimaryRank SecondaryRank Kicker1 Kicker2 Kicker3 Kicker4
@@ -74,62 +74,90 @@ class PokerRankBase(BitField):
 	"Straight Flush $primaryRank high"
 	]
 
-    def __init__(self, rankValue=None, primaryCard=None,
+    @staticmethod
+    def __new__(cls, rankValue, primaryCard=None,
 		 secondaryCard=None, kickers=None):
-        BitField.__init__(self, value = 0, length=32)
-        if rankValue:
-            self.setType(rankValue)
+        # TODO: Add sanity checking of valyes
+        value = rankValue << cls.TYPE_OFFSET
+
+        # Alow primaryCard to be Card or Rank
+        # TODO: This slows us down, allow only Rank
         if primaryCard:
-            self.setPrimaryCardRank(primaryCard)
+            if isinstance(primaryCard, Card):
+                rank = primaryCard.rank
+            else:
+                rank = primaryCard
+            value |= rank << cls.PRIMARY_CARD_OFFSET
+
         if secondaryCard:
-            self.setSecondaryCardRank(secondaryCard)
+            if isinstance(secondaryCard, Card):
+                rank = secondaryCard.rank
+            else:
+                rank = secondaryCard
+            value |= rank << cls.SECONDARY_CARD_OFFSET
+        
         if kickers:
-            self.setKickers(kickers)
+            kickers.sort(reverse=True)
+            offset = cls.FIRST_KICKER_OFFSET
+            for kicker in kickers:
+                # All for kicker to be both card or Rank
+                if isinstance(kicker, Card):
+                    kickerRank = kicker.rank
+                else:
+                    kickerRank = kicker
+                value |= kickerRank << offset
+                offset -= 4
+
+        # Sanity check
+        if value == 0:
+            raise PokerInternalException("Value == 0")
+
+        return BitField.__new__(cls, value)
 
     @staticmethod
     def straightFlush(rank):
-	return PokerRankBase(PokerRankBase.STRAIGHT_FLUSH, rank, None, None)
+	return PokerRank(PokerRank.STRAIGHT_FLUSH, rank, None, None)
 
     @staticmethod
     def quads(rank, kickers):
-	return PokerRankBase(PokerRankBase.QUADS, rank, None, kickers)
+	return PokerRank(PokerRank.QUADS, rank, None, kickers)
 
     @staticmethod
     def fullHouse(primaryRank, secondaryRank):
-	return PokerRankBase(PokerRankBase.BOAT,
-			     primaryRank,
-			     secondaryRank,
-			     None)
+	return PokerRank(PokerRank.BOAT,
+                         primaryRank,
+                         secondaryRank,
+                         None)
 
     @staticmethod
     def flush(rank, kickers):
-	return PokerRankBase(PokerRankBase.FLUSH, rank, None, kickers)
+	return PokerRank(PokerRank.FLUSH, rank, None, kickers)
 
     @staticmethod
     def straight(rank):
-	return PokerRankBase(PokerRankBase.STRAIGHT, rank, None, None)
+	return PokerRank(PokerRank.STRAIGHT, rank, None, None)
 
     @staticmethod
     def trips(rank, kickers):
-	return PokerRankBase(PokerRankBase.TRIPS, rank, None, kickers)
+	return PokerRank(PokerRank.TRIPS, rank, None, kickers)
 
     @staticmethod
     def twoPair(primaryRank, secondaryRank, kickers):
-	return PokerRankBase(PokerRankBase.TWO_PAIR,
-			     primaryRank,
-			     secondaryRank,
-			     kickers)
+	return PokerRank(PokerRank.TWO_PAIR,
+                         primaryRank,
+                         secondaryRank,
+                         kickers)
 
     @staticmethod
     def pair(rank, kickers):
-	return PokerRankBase(PokerRankBase.PAIR, rank, None, kickers)
+	return PokerRank(PokerRank.PAIR, rank, None, kickers)
 
     @staticmethod
     def highCard(rank, kickers):
-	return PokerRankBase(PokerRankBase.HIGH_CARD, rank, None, kickers)
+	return PokerRank(PokerRank.HIGH_CARD, rank, None, kickers)
 
     def __str__(self):
-	if self.value == 0:
+	if self == 0:
 	    raise PokerException("Tried to convert uninitialized PokerRank to string.")
         type = self.getType()
 	try:
@@ -163,56 +191,9 @@ class PokerRankBase(BitField):
                 string = string + str(kicker) + ' '
 	return string
 
-    def __cmp__(self, other):
-	if other is None:
-	    # Always greater than nothing
-	    return 1
-	# Allow comparison of PokerRank object and integer
-	if isinstance(other, int):
-	    return cmp(self.getType(), other)
-	assertInstance(other, PokerRankBase)
-        return cmp(self.value, other.value)
-
-    # Override methods set by BitField
-    def __eq__(self, other):
-        return self.__cmp__(other) == 0
-
-    def __ne__(self, other):
-        return self.__cmp__(other) != 0
-
-    def __lt__(self, other):
-        return self.__cmp__(other) < 0
-
-    def __le__(self, other):
-        return self.__cmp__(other) <= 0
-
-    def __gt__(self, other):
-        return self.__cmp__(other) > 0
-
-    def __ge__(self, other):
-        return self.__cmp__(other) >= 0
-
-    def _setEqual(self, otherRank):
-	"""This this rank equal to provided rank."""
-	self.value = otherRank.value
-
-    # Get/Set functions for bit fields
-    def setType(self, type):
-        """Set the type (e.g. FULL_HOUSE, STRAIGHT) of this instance."""
-        self.setBitRange(numBits = 4, value=type, offset=self.TYPE_OFFSET)
-
     def getType(self):
         """Return the type of this instance as an integer."""
         return self.getBitRange(numBits = 4, offset=self.TYPE_OFFSET, shift=True)
-
-    def setPrimaryCardRank(self, rank):
-        """Set the rank of the primary card."""
-        if isinstance(rank, Card):
-            rank = rank.rank
-        self.setBitRange(numBits=4,
-                         value=rank,
-                         offset=self.PRIMARY_CARD_OFFSET)
-
     def getPrimaryCardRank(self):
         """Get the rank of the primary card.
 
@@ -224,14 +205,6 @@ class PokerRankBase(BitField):
             return None
         return Rank(value)
 
-    def setSecondaryCardRank(self, rank):
-        """Set the rank of the secondary card (e.g. the pair in a full house)."""
-        if isinstance(rank, Card):
-            rank = rank.rank
-        self.setBitRange(numBits = 4,
-                         value=rank,
-                         offset=self.SECONDARY_CARD_OFFSET)
-
     def getSecondaryCardRank(self):
         """Get the rank of the secodary card (e.g. the pair in a full house).
 
@@ -242,22 +215,6 @@ class PokerRankBase(BitField):
         if not value:
             return None
         return Rank(value)
-
-    def setKickers(self, kickers):
-        """Set (up to 4) kickers."""
-        # We want highest kicker first
-        kickers.sort(reverse=True)
-        offset = self.FIRST_KICKER_OFFSET
-        for kicker in kickers:
-            # All for kicker to be both card or Rank
-            if isinstance(kicker, Card):
-                kickerRank = kicker.rank
-            else:
-                kickerRank = kicker
-            self.setBitRange(numBits = 4,
-                             offset=offset,
-                             value=kickerRank)
-            offset -= 4
 
     def getKickerRanks(self):
         """Return an array with ranks of kickers."""
@@ -280,254 +237,10 @@ class PokerRankBase(BitField):
 
 ######################################################################
 #
-# PokerRank
-#
-
-class PokerRank(PokerRankBase):
-    def __init__(self, hand):
-	assertInstance(hand, Cards)
-	PokerRankBase.__init__(self)
-	self.hand = hand
-	for cards in hand.hands():
-	    if len(cards) > 5:
-		rank = self.__getRankSixPlusCards(cards)
-	    else:
-		rank = self.__getRankFiveCards(cards)
-	    if self < rank:
-		self._setEqual(rank)
-
-    def __getRankFiveCards(self, cards):
-	"""Get rank of five cards. This method is more efficient than
-	__getRankSixPlusCards()."""
-	cards.sort()
-	straight = False
-	wheel = False
-	isFlush = cards.sameSuit()
-	straight = isStraight(cards)
-	wheel = isWheel(cards)
-	# Do we have a straight flush?
-	if (straight and isFlush):
-	    return self.straightFlush(cards[0].rank)
-	if (wheel and isFlush):
-	    return self.straightFlush(cards[1].rank)
-	# Check for four of a kind
-	if (cards[0].rank == cards[1].rank == cards[2].rank == cards[3].rank):
-	    return self.quads(cards[0].rank, cards[4:])
-	if (cards[1].rank == cards[2].rank == cards[3].rank == cards[4].rank):
-	    return self.quads(cards[1].rank, cards[0:1])
-	# Check for full house
-	#   -First two and last two cards must match
-	#   -Then middle card either matches first two cards
-	#    or last two cards
-	if ((cards[0].rank == cards[1].rank) and
-	    (cards[3].rank == cards[4].rank)):
-	    if (cards[2].rank == cards[0].rank):
-		# XXXYY
-		return self.fullHouse(cards[0].rank, cards[3].rank)
-	    elif (cards[2].rank == cards[3].rank):
-		# XXYYY
-		return self.fullHouse(cards[2].rank, cards[0].rank)
-	# Check for flush, which we've already done
-	if isFlush:
-	    return self.flush(cards[0].rank, cards[1:])
-	# Check for Straight, which we've already done
-	if straight:
-	    return self.straight(cards[0].rank)
-	if wheel:
-	    return self.straight(cards[1].rank)
-	# Check for trips
-	if ((cards[0].rank == cards[1].rank == cards[2].rank) or
-	    (cards[1].rank == cards[2].rank == cards[3].rank) or
-	    (cards[2].rank == cards[3].rank == cards[4].rank)):
-	    # cards[2] will always be one of the trips
-	    primaryRank = cards[2].rank
-	    cards.removeRank(primaryRank)
-	    return self.trips(primaryRank, cards)
-	# Check for two pair	    
-	# At this point we know we don't have trips, so can optimize some
-	if (cards[0].rank == cards[1].rank):
-	    if (cards[2].rank == cards[3].rank):
-		return self.twoPair(cards[0].rank, cards[2].rank, cards[4:])
-	    if (cards[3].rank == cards[4].rank):
-		return self.twoPair(cards[0].rank, cards[3].rank, cards[2:3])
-	elif ((cards[1].rank == cards[2].rank) and
-	      (cards[3].rank == cards[4].rank)):
-	    return self.twoPair(cards[1].rank, cards[3].rank, cards[0:1])
-	# Check for a pair
-	# At this point we know we don't have two pair or trips
-	foundPair = False
-	for index in range(4):
-	    if cards[index].rank == cards[index+1].rank:
-		foundPair = True
-		break
-	if foundPair:
-	    pairRank = cards[index].rank
-	    del cards[index:index+2]
-	    return self.pair(pairRank, cards)
-	# Just a high card
-	return self.highCard(cards[0].rank, cards[1:])
-
-    def __getRankSixPlusCards(self, cards):
-	"""Get high rank from six or more cards."""
-	cards.sort()
-	straight = findLongestStraight(cards)
-	# Check for straight flush
-	if (len(straight) >= 5) and straight.sameSuit():
-	    return self.straightFlush(straight[0].rank)
-	rankCount = cards.countRanks()
-	# Check for four of a kind
-	try:
-	    primaryRank = rindex(rankCount, 4)
-	except:
-	    pass
-	else:
-	    cards.removeRank(primaryRank)
-	    return self.quads(primaryRank, cards[0:1])
-	# Check for full house
-	count = rankCount.count(3)
-	if count > 1:
-	    primaryRank = rindex(rankCount, 3)
-	    # Set that value to zero so we can find second value
-	    rankCount[primaryRank] = 0
-	    secondaryRank = rindex(rankCount, 3)
-	    return self.fullHouse(primaryRank,secondaryRank)
-	elif count == 1:
-	    try:
-		secondaryRank = rindex(rankCount, 2)
-	    except:
-		pass
-	    else:
-		primaryRank = rindex(rankCount, 3)
-		return self.fullHouse(primaryRank, secondaryRank)
-	# Check for flush
-	# Assume we will find only one flush
-	for suit in Suit.suits:
-	    if cards.suitCount(suit) >= 5:
-		suitedCards = cards.suitedCards(suit)
-		topCard = suitedCards.pop(0)
-		primaryRank = topCard.rank
-		return self.flush(primaryRank, suitedCards[:4])
-	# Check for straight
-	if len(straight) >= 5:
-	    return self.straight(straight[0].rank)
-	# Check for trips
-	try:
-	    primaryRank = rindex(rankCount, 3)
-	except:
-	    pass
-	else:
-	    cards.removeRank(primaryRank)
-	    return self.trips(primaryRank, cards[0:2])
-	# Check for two pair and pair
-	pairCount = rankCount.count(2)
-	if pairCount > 1:
-	    # Two pair
-	    primaryRank = rindex(rankCount, 2)
-	    # Remove so we can find second pair
-	    rankCount[primaryRank] = 0
-	    secondaryRank = rindex(rankCount, 2)
-	    cards.removeRank(primaryRank)
-	    cards.removeRank(secondaryRank)
-	    return self.twoPair(primaryRank, secondaryRank, cards[0:1])
-	elif pairCount == 1:
-	    primaryRank = rankCount.index(2)
-	    cards.removeRank(primaryRank)
-	    return self.pair(primaryRank, cards[0:3])
-	# High card
-	primaryRank = cards.pop(0).rank
-	return self.highCard(primaryRank, cards[0:4])
-
-######################################################################
-#
-# PokerLowRank
-#
-
-class PokerLowRank(PokerRankBase):
-    """Get the lowest poker rank of a hand, ignoring straights and flushes.
-    The lowest possible rank is 5-high (5432A)."""
-    
-    def __init__(self, hand):
-	assertInstance(hand, Cards)
-        # Start with highest possible rank and work down
-	PokerRankBase.__init__(self, PokerRankBase.STRAIGHT_FLUSH, Rank.ACE, None, None)
-	self.hand = hand
-        self.hand.makeAcesLow()
-	for cards in hand.hands():
-	    rank = self.__getLowRank(cards)
-	    if rank < self:
-		self._setEqual(rank)
-
-    def isEightOrBetter(self):
-	"""Does rank qualify for eight or better low?"""
-	return ((self.getType() == PokerRank.HIGH_CARD) and
-                (self.getPrimaryCardRank() <= 8))
-
-    def __getLowRank(self, cards):
-	"""Find lowest rank of given cards ignoring straights and flushes."""
-	cards.sort()
-	# Find the lowest five cards
-	# Add each lowest card that doesn't pair to our created array.
-	# If we don't get five start then with the lowest that pairs, then
-	# the lowest that forms trips, etc.
-	countLevel = 1
-	lowestCards = Cards()
-	remainingCards = Cards()
-	while len(lowestCards) < 5:
-	    if len(cards) == 0:
-		# Didn't find enough, so now get cards that match cards
-		# in lowestCards (or match pairs in lowestCards and so on)
-		cards = remainingCards
-		remainingCards = Cards()
-		countLevel += 1
-	    card = cards.pop()
-	    if lowestCards.rankCount(card.rank) < countLevel:
-		lowestCards.insert(0, card)
-	    else:
-		remainingCards.insert(0, card)
-	# Ok, lowestCards now contain five lowest cards
-	if countLevel == 1:
-	    # We didn't have to pair, so it's a high card
-	    primaryRank = lowestCards.pop(0).rank
-	    return self.highCard(primaryRank, lowestCards)
-	elif countLevel == 2:
-	    # We have at least one pair. Do we have two pair?
-	    rankCount = lowestCards.countRanks()
-	    if rankCount.count(2) == 2:
-		primaryRank = rindex(rankCount, 2)
-		secondaryRank = rankCount.index(2)
-		lowestCards.removeRank(primaryRank)
-		lowestCards.removeRank(secondaryRank)
-		return self.twoPair(primaryRank, secondaryRank, lowestCards)
-	    else:
-		# Just a single pair
-		primaryRank = rankCount.index(2)
-		lowestCards.removeRank(primaryRank)
-		return self.pair(primaryRank, lowestCards)
-	elif countLevel == 3:
-	    # We have at least trips or maybe a full house
-	    rankCount = lowestCards.countRanks()
-	    if rankCount.count(2) == 1:
-		primaryRank = rankCount.index(3)
-		secondaryRank = rankCount.index(2)
-		return self.fullHouse(primaryRank, secondaryRank)
-	    else:
-		# Just trips
-		primaryRank = rankCount.index(3)
-		lowestCards.removeRank(primaryRank)
-		return self.trips(primaryRank, lowestCards)
-	else:
-	    # We've got quads (assuming no five of a kind)
-	    rankCount = lowestCards.countRanks()
-	    primaryRank = rankCount.index(4)
-	    lowestCards.removeRank(primaryRank)
-	    return self.quads(primaryRank, lowestCards)
-
-######################################################################
-#
 # HoldEmStartingHandRank
 #
 
-class HoldEmStartingHandRank(PokerRankBase):
+class HoldEmStartingHandRank(PokerRank):
     """Get the rank of two starting cards in HoldEmHand."""
     
     def __init__(self, hand):
@@ -549,50 +262,3 @@ class HoldEmStartingHandRank(PokerRankBase):
 	    else:
 		self.primaryCard = hand[1].rank
 		self.kickers = [hand[0]]
-
-######################################################################
-#
-# Utility Functions
-#
-
-
-def findLongestStraight(cards):
-    """Given an array of sorted cards, return the longest straight."""
-    if len(cards) == 0:
-	return Cards()
-    longestStraight = Cards()
-    straight = Cards()
-    straight.append(cards[0])
-    for index in range(1,len(cards)):
-	if cards[index].rank != (straight[len(straight)-1].rank - 1):
-	    if len(straight) > len(longestStraight):
-		longestStraight = straight
-	    straight = Cards()
-	straight.append(cards[index])
-    if len(straight) > len(longestStraight):
-	longestStraight = straight
-    # Check for special case of straight ending with a 2 when we have
-    # and Ace, in which case treat the ace as low.
-    if ((longestStraight[len(longestStraight)-1].rank == Rank.TWO) and
-	(cards[0].rank == Rank.ACE)):
-	longestStraight.append(cards[0])
-    return longestStraight
-
-def isStraight(cards):
-    """Do five sorted cards form a straight? (Excluding wheel.)"""
-    if ((cards[1].rank == (cards[0].rank - 1)) and
-	(cards[2].rank == (cards[1].rank - 1)) and
-	(cards[3].rank == (cards[2].rank - 1)) and
-	(cards[4].rank == (cards[3].rank - 1))):
-	return True
-    return False
-
-def isWheel(cards):
-    """Do five sorted card form a wheel (5432A)?"""
-    if ((cards[0].rank == Rank.ACE) and
-	(cards[1].rank == Rank.FIVE) and
-	(cards[2].rank == Rank.FOUR) and
-	(cards[3].rank == Rank.THREE) and
-	(cards[4].rank == Rank.TWO)):
-	return True
-    return False

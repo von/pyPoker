@@ -9,7 +9,7 @@
 from pyPoker.Cards import Rank, Cards
 from pyPoker.Hand import Hand, OmahaHand
 from pyPoker.Hands import Hands
-from pyPoker.PokerRank import PokerRankBase, PokerRank, PokerLowRank
+from pyPoker.PokerRank import PokerRank
 import unittest
 
 class TestSequenceFunctions(unittest.TestCase):
@@ -20,8 +20,10 @@ class TestSequenceFunctions(unittest.TestCase):
     def testCreation(self):
         """Test basic creation of PokerRankBase."""
         kickers = Cards.fromString("JC 8D 4S")
-        rank = PokerRankBase(PokerRank.PAIR, primaryCard=Rank.KING,
-                             kickers=kickers)
+        rank = PokerRank(PokerRank.PAIR, primaryCard=Rank.KING,
+                         kickers=kickers)
+        self.assertIsNotNone(rank)
+        self.assertNotEqual(rank, 0)
         type = rank.getType()
         self.assertEqual(type, PokerRank.PAIR,
                          "rank = (%s) %d != PAIR" % (str(type), type))
