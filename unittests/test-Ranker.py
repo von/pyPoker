@@ -3,7 +3,7 @@
 
 from pyPoker.BitField import BitField
 from pyPoker.Cards import Cards, Rank, Suit
-from pyPoker.Hand import Board, HoldEmHand, OmahaHand
+from pyPoker.Hand import Board, Hand, HoldEmHand, OmahaHand
 from pyPoker.Hands import Hands
 from pyPoker.PokerRank import PokerRank
 from pyPoker.Ranker import Ranker
@@ -19,12 +19,12 @@ class TestSequenceFunctions(unittest.TestCase):
         cards = Cards.fromString("JC 8D 4S KH 9D 3C")
         bitfield = self.ranker._handToBitField(cards)
         expectedBitfield = BitField()
-        expectedBitfield.setBit(Rank.JACK)
-        expectedBitfield.setBit(Rank.EIGHT)
-        expectedBitfield.setBit(Rank.FOUR)
-        expectedBitfield.setBit(Rank.KING)
-        expectedBitfield.setBit(Rank.NINE)
-        expectedBitfield.setBit(Rank.THREE)        
+        expectedBitfield += Rank.JACK
+        expectedBitfield += Rank.EIGHT
+        expectedBitfield += Rank.FOUR
+        expectedBitfield += Rank.KING
+        expectedBitfield += Rank.NINE
+        expectedBitfield += Rank.THREE
         self.assertEqual(bitfield, expectedBitfield,
                          "%s != %s" % (bitfield, expectedBitfield))
 
@@ -34,25 +34,25 @@ class TestSequenceFunctions(unittest.TestCase):
         bitfield = self.ranker._handToBitField(cards)
         bitfields = self.ranker._handToSuitedBitFields(cards)
         expectedClubs = BitField()
-        expectedClubs.setBit(Rank.SEVEN)
-        expectedClubs.setBit(Rank.ACE)
+        expectedClubs += Rank.SEVEN
+        expectedClubs += Rank.ACE
         self.assertEqual(bitfields[Suit.CLUBS], expectedClubs,
                          "Clubs: %s != %s" % (bitfields[Suit.CLUBS],
                                               expectedClubs))
         expectedDiamonds = BitField()
-        expectedDiamonds.setBit(Rank.SIX)
+        expectedDiamonds += Rank.SIX
         self.assertEqual(bitfields[Suit.DIAMONDS], expectedDiamonds,
                          "DIAMONDS: %s != %s" % (bitfields[Suit.DIAMONDS],
                                                  expectedDiamonds))
         expectedHearts = BitField()
-        expectedHearts.setBit(Rank.QUEEN)
-        expectedHearts.setBit(Rank.KING)
+        expectedHearts += Rank.QUEEN
+        expectedHearts += Rank.KING
         self.assertEqual(bitfields[Suit.HEARTS], expectedHearts,
                          "HEARTS: %s != %s" % (bitfields[Suit.HEARTS],
                                                expectedHearts))
         expectedSpades = BitField()
-        expectedSpades.setBit(Rank.FOUR)
-        expectedSpades.setBit(Rank.SEVEN)
+        expectedSpades += Rank.FOUR
+        expectedSpades += Rank.SEVEN
         self.assertEqual(bitfields[Suit.SPADES], expectedSpades,
                          "SPADES: %s != %s" % (bitfields[Suit.SPADES],
                                                expectedSpades))
@@ -95,6 +95,16 @@ class TestSequenceFunctions(unittest.TestCase):
         for cards, rank in tests:
             bitfield = self.ranker._handToBitField(Cards.fromString(cards))
             self.assertEqual(self.ranker._hasStraight(bitfield), rank)
+
+    def testRankHand(self):
+        """Test rankHand() mathod."""
+        rank = self.ranker.rankHand(Hand.fromString("JC TS 9D 6H 2C"))
+        self.assertIsNotNone(rank)
+        self.assertIsInstance(rank, PokerRank, type(rank))
+        self.assertNotEqual(rank, 0)
+        rankType = rank.getType()
+        self.assertEqual(rankType, PokerRank.HIGH_CARD,
+                         "rank = (%s) %d != HIGH_CARD" % (str(rankType), rankType))
 
     def testRanking(self):
 	"""Test hand ranking."""
@@ -153,9 +163,13 @@ class TestSequenceFunctions(unittest.TestCase):
 		"AS KS QS JS TS"])
 
 	ranks = [self.ranker.rankHand(hand) for hand in hands]
+        # Sanity check ranks
         for i, rank in enumerate(ranks):
             self.assertTrue(rank is not None,
                             "Hand \"%s\" rank == None" % hands[i])
+            self.assertNotEqual(rank, 0,
+                                "Hand \"%s\" rank == 0" % hands[i])
+        # Make sure ranks are increasing
 	for i in range(len(hands)):
 	    for j in range(len(hands)):
 		if (i < j):
@@ -180,13 +194,16 @@ class TestSequenceFunctions(unittest.TestCase):
 	hand = HoldEmHand.fromString("AC 2C")
 	hand.setBoard(board)
 	rank = self.ranker.rankHand(hand)
-	self.assertEqual(rank, PokerRank.PAIR, "rank = %s" % rank)
+	self.assertEqual(rank.getType(), PokerRank.PAIR,
+                         "rankType = %d" % rank.getType())
 	board.addCardFromString("AD")
 	rank = self.ranker.rankHand(hand)
-	self.assertEqual(rank, PokerRank.TWO_PAIR, "rank = %s" % rank)
+	self.assertEqual(rank.getType(), PokerRank.TWO_PAIR,
+                         "rank = %d" % rank.getType())
 	board.addCardFromString("3H")
 	rank = self.ranker.rankHand(hand)
-	self.assertEqual(rank, PokerRank.STRAIGHT, "rank = %s" % rank)
+	self.assertEqual(rank.getType(), PokerRank.STRAIGHT,
+                         "rank = %d" % rank.getType())
 
     def testOmaha(self):
 	"""Test basic Omaha hand ranking."""
@@ -194,7 +211,7 @@ class TestSequenceFunctions(unittest.TestCase):
 	board = Board.fromString("AS AD 4H TH 8D")
 	hand.setBoard(board)
 	rank = self.ranker.rankHand(hand)
-	self.assertEqual(rank, PokerRank.TWO_PAIR, "rank = %s" % rank)
+	self.assertEqual(rank.getType(), PokerRank.TWO_PAIR, "rank = %s" % rank)
 	self.assertEqual(rank.getPrimaryCardRank(), Rank.ACE,
 			 "primaryCard = %s" % rank.getPrimaryCardRank())
 	self.assertEqual(rank.getSecondaryCardRank(), Rank.TEN,
