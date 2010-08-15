@@ -87,13 +87,12 @@ class HoldEmHands(Hands):
 	else:
 	    self.addUnsuitedHands(rank1, rank2)
 
+    @classmethod
     def fromGroups(cls, *strings):
 	hands = cls()
 	for string in strings:
 	    hands.addHandGroup(string)
 	return hands
-
-    fromGroups = classmethod(fromGroups)
 
     def addSuitedHands(self, rank1, rank2):
 	for suit in Suit.suits:

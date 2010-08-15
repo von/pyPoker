@@ -52,15 +52,13 @@ class Hand(Cards):
 	if cards:
 	    self.addCards(cards)
 
+    @classmethod
     def fromString(cls, string):
 	return cls(Cards().fromString(string))
 
-    fromString = classmethod(fromString)
-
+    @classmethod
     def getMaxCards(cls):
 	return cls.maxCards
-
-    getMaxCards = classmethod(getMaxCards)
 
     def numCards(self):
 	if self.board:

@@ -46,6 +46,7 @@ class Suit(int):
 	if Suit.suits.count(self) == 0:
 	    raise BadSuitException("Invalud value %d" % self)
 
+    @staticmethod
     def fromString(string):
 	char = string.upper()
 	for key in Suit.suitsShortString.keys():
@@ -55,14 +56,11 @@ class Suit(int):
 	    raise BadRankException("Bad suit \"%s\"" % char)
 	return Suit(key)
 
-    fromString = staticmethod(fromString)
-
+    @staticmethod
     def random():
 	import random
 	value = random.randint(Suit.CLUBS, Suit.SPADES)
 	return Suit(value)
-
-    random = staticmethod(random)
 
     def __str__(self):
 	return self.suitsShortString[self]
@@ -126,6 +124,7 @@ class Rank(int):
 	if Rank.rankRange.count(self) == 0:
 	    raise BadRankException("Invalid rank value %d" % value)
 
+    @staticmethod
     def fromString(string):
 	char = string.upper()
         # Special case "A" to it doesn't become ACE_LOW
@@ -138,14 +137,11 @@ class Rank(int):
 	    raise BadRankException("Bad rank \"%s\"" % char)
 	return Rank(key)
 
-    fromString = staticmethod(fromString)
-
+    @staticmethod
     def random():
 	import random
 	value = random.randint(2, Rank.ACE)
 	return Rank(value)
-
-    random = staticmethod(random)
 
     def __str__(self):
 	return Rank.ranksShortString[self]
@@ -176,6 +172,7 @@ class Card:
 	    self.rank = Rank(rank)
 	    self.suit = Suit(suit)
 
+    @staticmethod
     def fromString(string):
 	if len(string) != 2:
 	    raise BadCardValueException("Bad card string (%s) - wrong length (!=2)" % desc)
@@ -184,8 +181,6 @@ class Card:
 	c.rank = Rank.fromString(string[0])
 	c.suit = Suit.fromString(string[1])
 	return c
-
-    fromString = staticmethod(fromString)
 
     def __str__(self):
 	return str(self.rank) + str(self.suit)
@@ -253,19 +248,17 @@ class Cards(list):
 	"""Adds card from sting (e.g '4H 7C 9D')."""
 	self.extend(Cards.fromString(string))
 
+    @classmethod
     def fromString(cls, string):
 	"""Create an object from string, which is a whitespace-separated
 	list of cards (e.g. '4H 7C 9D')."""
 	return cls.fromStrings(string.split())
 
-    fromString = classmethod(fromString)
-
+    @classmethod
     def fromStrings(cls, strings):
 	"""Create an object from an array of strings, eacho of which
 	description of a card (e.g. ['4H','7C','9D'])."""
 	return cls([Card.fromString(s) for s in strings])
-
-    fromStrings = classmethod(fromStrings)
 
     def sort(self, reverse=False):
 	"""Sort cards so they are low to high.

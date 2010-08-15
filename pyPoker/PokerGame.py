@@ -125,10 +125,9 @@ class PokerGame:
 	if len(self.scoops) < len(self.hands):
 	    self.scoops.extend([ 0 ] * (len(self.hands)-len(self.scoops)))
 
+    @classmethod
     def getHandClass(cls):
 	return cls.handClass
-
-    getHandClass = classmethod(getHandClass)
 
     def addHands(self, hands):
 	if hands is None:
@@ -152,6 +151,7 @@ class PokerGame:
 	assertInstance(hg, HandGenerator)
 	self.hands.addHand(hg)
 
+    @classmethod
     def getMaxHands(cls):
 	cardsPerHand = cls.handClass.maxCards
 	if cls.hasBoard():
@@ -160,8 +160,6 @@ class PokerGame:
 	    boardCards = 0
 	numCards = cls.deckClass.numCards - boardCards
 	return int(numCards/cardsPerHand)
-
-    getMaxHands = classmethod(getMaxHands)
 	
     def getNumHands(self):
 	return max(self.numHands, len(self.hands))
@@ -169,10 +167,9 @@ class PokerGame:
     def getHands(self):
 	return self.hands
 
+    @classmethod
     def hasBoard(cls):
 	return (cls.handClass.boardClass != None)
-
-    hasBoard = classmethod(hasBoard)
 
     def setBoard(self, board):
 	if not self.hasBoard():
