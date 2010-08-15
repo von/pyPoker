@@ -20,14 +20,14 @@ class TestSequenceFunctions(unittest.TestCase):
 		r2 = Rank(r+1)
 	    except BadRankException:
 		break
-	    self.assert_(r1 < r2, "!%s < %s" % (r1, r2))
+	    self.assertLess(r1, r2, "!%s < %s" % (r1, r2))
 
     def testRankCompareAcesLow(self):
 	ace = Rank(Rank.ACE_LOW)
 	for r in Rank.ranks:
 	    rank = Rank(r)
 	    if ace != rank:
-		self.assert_(ace < rank, "!low ace < %s" % rank)
+		self.assertLess(ace, rank, "!low ace < %s" % rank)
 
     def testBadLowRank(self):
 	try:
@@ -38,12 +38,8 @@ class TestSequenceFunctions(unittest.TestCase):
 	    self.fail("Rank(Rank.TWO - 1) failed to raise exception")
 	    
     def testBadHighRank(self):
-	try:
+        with self.assertRaises(BadRankException):
 	    r = Rank(Rank.ACE + 1)
-	except BadRankException:
-	    pass
-	else:
-	    self.fail("Rank(Rank.ACE + 1) failed to raise exception")
 
     def testBasicConstruction(self):
 	c = Card().fromString("8C")
