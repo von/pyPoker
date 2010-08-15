@@ -6,8 +6,8 @@ import sys
 import string
 from pyPoker.Cards import Card, Cards, Suit, Rank
 from pyPoker.Hand import HoldEmHand
+from pyPoker.HoldEmStartingHandRanker import HoldEmStartingHandRanker
 from pyPoker.Deck import Deck
-from pyPoker.PokerRank import HoldEmStartingHandRank
 
 ######################################################################
 
@@ -19,7 +19,7 @@ def printHeader(numHands):
     print
 
 def evaluateHand(hand, numDeals, numHands):
-    handRank = HoldEmStartingHandRank(hand)
+    handRank = HoldEmStartingHandRanker.rankHand(hand)
     betterThan = [ 0 ] * numHands
     for deal in range(numDeals):
 	deck = Deck()
@@ -30,7 +30,7 @@ def evaluateHand(hand, numDeals, numHands):
 	    hands.append(HoldEmHand())
 	deck.dealHands(hands)
 	for h in range(numHands):
-	    rank = HoldEmStartingHandRank(hands[h])
+	    rank = HoldEmStartingHandRanker.rankHand(hands[h])
 	    if handRank > rank:
 		betterThan[h] += 1
 	    else:

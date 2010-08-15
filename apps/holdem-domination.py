@@ -6,7 +6,7 @@ from pyPoker.Hand import HoldEmHand
 from pyPoker.Cards import Card, Rank
 from pyPoker.Deck import Deck
 from pyPoker.PredefinedCards import *
-from pyPoker.PokerRank import HoldEmStartingHandRank
+from pyPoker.HoldEmStartingHandRanker import HoldEmStartingHandRanker
 import sys
 
 ######################################################################
@@ -43,7 +43,7 @@ def main(argv=None):
             hand = HoldEmHand([Card((rank1, Clubs)),
                                Card((rank2, Clubs))])
 
-            rank = HoldEmStartingHandRank(hand)
+            rank = HoldEmStartingHandRanker.rankHand(hand)
 
             # Build starting deck
             startingDeck = Deck()
@@ -62,7 +62,7 @@ def main(argv=None):
                         (h[1].rank == hand[0].rank) or
                         (h[1].rank == hand[1].rank)):
                         # We have domination
-                        if (HoldEmStartingHandRank(h) > rank):
+                        if (HoldEmStartingHandRanker.rankHand(h) > rank):
                             # Dealt hand is better
                             dominated = True
                 if dominated:

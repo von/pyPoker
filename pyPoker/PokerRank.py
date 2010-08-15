@@ -235,30 +235,3 @@ class PokerRank(BitField):
 	return ((self.getType() == PokerRank.HIGH_CARD) and
                 (self.getPrimaryCardRank() <= 8))
 
-######################################################################
-#
-# HoldEmStartingHandRank
-#
-
-class HoldEmStartingHandRank(PokerRank):
-    """Get the rank of two starting cards in HoldEmHand."""
-    
-    def __init__(self, hand):
-	from Hand import HoldEmHand
-	assertInstance(hand, HoldEmHand)
-	if len(hand) != 2:
-	    raise IncompleteHandException("Need 2 cards in hand, have %d" % len(hand))
-	PokerRankBase.__init__(self)
-	if hand[0] == hand[1]:
-	    # Pair
-	    self.rank = PokerRank.PAIR
-	    self.primaryCard = hand[0]
-	else:
-	    # Two unpaired cards, find higher
-	    self.rank = PokerRank.HIGH_CARD
-	    if hand[0] > hand[1]:
-		self.primaryCard = hand[0].rank
-		self.kickers = [hand[1]]
-	    else:
-		self.primaryCard = hand[1].rank
-		self.kickers = [hand[0]]
