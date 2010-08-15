@@ -1,10 +1,5 @@
 #!/usr/bin/env python
-######################################################################
-#
-# Unittests for Deck module
-#
-# $Id$
-######################################################################
+"""Unittests for Deck module"""
 
 from pyPoker.Hand import Hand, HoldEmHand
 from pyPoker.Deck import Deck

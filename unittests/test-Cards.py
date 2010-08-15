@@ -1,10 +1,5 @@
 #!/usr/bin/env python
-######################################################################
-#
-# Unittests for Cards module
-#
-# $Id$
-######################################################################
+"""Unittests for Cards module"""
 
 from pyPoker.Cards import Card, Cards, Suit, Rank, BadRankException
 import unittest

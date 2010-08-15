@@ -1,10 +1,5 @@
 #!/usr/bin/env python
-######################################################################
-#
-# Unittests for PredefinedCards module
-#
-# $Id$
-######################################################################
+"""Unittests for PredefinedCards module"""
 
 from pyPoker.PredefinedCards import *
 import unittest

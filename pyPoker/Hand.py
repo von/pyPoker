@@ -1,13 +1,4 @@
-######################################################################
-#
-# Hand.py
-#
-# Base class for all pyPoker Hands.
-#
-# vwelch@ncsa.uiuc.edu
-# $Id$
-#
-######################################################################
+"""Base class for all pyPoker Hands."""
 
 from PokerException import PokerException
 from Cards import Cards, Card, Rank, Suit, BadRankException, NotEnoughCardsException

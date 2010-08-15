@@ -4,8 +4,6 @@
 #
 # Class that generates a hand from a group of hands randomly.
 #
-# vwelch@ncsa.uiuc.edu
-# $Id$
 #
 ######################################################################
 

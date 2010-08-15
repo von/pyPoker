@@ -1,10 +1,5 @@
 #!/usr/bin/env python
-######################################################################
-#
-# Unittests for HandGenerator module
-#
-# $Id$
-######################################################################
+"""Unittests for HandGenerator module"""
 
 from pyPoker.HandGenerator import HoldEmHandGenerator, HandGenerationException
 from pyPoker.Hands import HoldEmHand

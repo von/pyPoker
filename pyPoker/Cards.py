@@ -1,13 +1,4 @@
-######################################################################
-#
-# Cards.py
-#
-# Classes for representing a playing cards.
-#
-# vwelch@ncsa.uiuc.edu
-# $Id$
-#
-######################################################################
+"""Classes for representing playing cards."""
 
 from PokerException import PokerException
 from Utils import assertInstance

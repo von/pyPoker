@@ -1,12 +1,4 @@
-######################################################################
-#
-# Utils.py
-#
-# Internal utility functions
-#
-# $Id$
-#
-######################################################################
+"""Internal utility functions"""
 
 def assertInstance(obj, cls):
     if obj is None:

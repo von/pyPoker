@@ -1,13 +1,4 @@
-######################################################################
-#
-# PokerGame.py
-#
-# Class for simulating poker games.
-#
-# vwelch@ncsa.uiuc.edu
-# $Id$
-#
-######################################################################
+"""Class for simulating poker games."""
 
 from PokerException import PokerException
 from Hand import Hand, CommunityCardHand, HoldEmHand, FiveCardStudHand, SevenCardStudHand, OmahaHand

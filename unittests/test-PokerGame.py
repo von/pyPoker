@@ -1,11 +1,5 @@
 #!/usr/bin/env python
-######################################################################
-#
-# Unittests for PokerGame module
-#
-# $Id$
-#
-######################################################################
+"""Unittests for PokerGame module"""
 
 from pyPoker.Hand import Board, HoldEmHand, FiveCardStudHand, OmahaHand
 from pyPoker.PokerGame import HoldEmGame, FiveCardStudHiLoGame, OmahaGame, OmahaHiLoGame

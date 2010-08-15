@@ -1,11 +1,4 @@
-######################################################################
-#
-# Hands
-# 
-# Class for generating groups of hands.
-#
-# $Id$
-######################################################################
+"""Class for generating groups of hands."""
 
 from PokerException import PokerException
 from Hand import Hand, HoldEmHand

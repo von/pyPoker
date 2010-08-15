@@ -1,13 +1,4 @@
-######################################################################
-#
-# PokerRank.py
-#
-# Class for representing a Hand's rank.
-#
-# vwelch@ncsa.uiuc.edu
-# $Id$
-#
-######################################################################
+"""Class for representing a Hand's rank."""
 
 from BitField import BitField
 from PokerException import PokerException, PokerInternalException

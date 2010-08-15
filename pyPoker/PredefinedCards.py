@@ -1,14 +1,3 @@
-######################################################################
-#
-# PredefinedCards.py
-#
-# Predefined instances of all the cards.
-#
-# von@vwelch.com
-#
-# $Id$
-#
-######################################################################
 """Provide predefined instances for Cards, Suits and Ranks.
 
 Included instances:

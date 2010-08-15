@@ -1,11 +1,5 @@
 #!/usr/bin/env python
-######################################################################
-#
-# Print pstats from file.
-#
-# $Id$
-#
-######################################################################
+"""Print pstats from file."""
 
 import pstats
 from optparse import OptionParser

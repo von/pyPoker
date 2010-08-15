@@ -1,13 +1,4 @@
-######################################################################
-#
-# Deck.py
-#
-# Class for representing a deck of playing cards.
-#
-# vwelch@ncsa.uiuc.edu
-# $Id$
-#
-######################################################################
+"""Class for representing a deck of playing cards."""
 
 from PokerException import PokerException
 from Cards import Cards, Card, Suit, Rank

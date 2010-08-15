@@ -1,13 +1,4 @@
-######################################################################
-#
-# PokerException.py
-#
-# Base class for all pyPoker exceptions.
-#
-# $Id$
-#
-######################################################################
-
+"""Base class for all pyPoker exceptions."""
 
 class PokerException(Exception):
     """Base class for all poker exceptions in this module."""

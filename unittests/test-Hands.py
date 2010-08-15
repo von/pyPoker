@@ -1,10 +1,5 @@
 #!/usr/bin/env python
-######################################################################
-#
-# Unittests for Hands module
-#
-# $Id$
-######################################################################
+"""Unittests for Hands module"""
 
 from pyPoker.Hands import HoldEmHands
 from pyPoker.slanskyHands import SlanskyHand

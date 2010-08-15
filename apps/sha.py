@@ -1,11 +1,5 @@
 #!/usr/bin/env python
-######################################################################
-#
-# Structured Hand Analysis
-#
-# $Id$
-#
-######################################################################
+"""Structured Hand Analysis"""
 
 from optparse import OptionParser
 import sys

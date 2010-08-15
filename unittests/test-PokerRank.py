@@ -1,10 +1,5 @@
 #!/usr/bin/env python
-######################################################################
-#
-# Unittests for PokerRank module
-#
-# $Id$
-######################################################################
+"""Unittests for PokerRank module"""
 
 from pyPoker.Cards import Rank, Cards
 from pyPoker.Hand import Hand, OmahaHand

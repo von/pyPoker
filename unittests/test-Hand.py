@@ -1,10 +1,5 @@
 #!/usr/bin/env python
-######################################################################
-#
-# Unittests for Hand module
-#
-# $Id$
-######################################################################
+"""Unittests for Hand module"""
 
 from pyPoker.Cards import Card, Suit, Rank
 from pyPoker.Hand import Hand, Board, OmahaHand, HoldEmHand
