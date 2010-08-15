@@ -6,6 +6,12 @@ import unittest
 
 class TestSequenceFunctions(unittest.TestCase):
 
+    def testSuitStr(self):
+        """Test converting Suit to string."""
+        s = Suit(Suit.CLUBS)
+        self.assertEqual(str(s), "C")
+        self.assertEqual(s.str(), "C")
+
     def testRankCompare(self):
 	"""Test basic rank comparisons."""
 	for r in Rank.ranks:
