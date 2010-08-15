@@ -68,7 +68,7 @@ class Suit(int):
 	return self.suitsShortString[self]
 
     def str(self):
-	return self.__str()
+	return self.__str__()
 
     def shortString(self):
 	return self.suitsShortString[self]
