@@ -16,25 +16,12 @@ def percent(num, total):
 
 ######################################################################
 
-
-def getVersionString():
-    """Return our RCS/CVS version string."""
-    import re
-    revisionString = "$Revision$"
-    match = re.match("\$Revision$", revisionString)
-    if match is None:
-        return "unknown"
-    version = match.group(1)
-    if version is None:
-        return "unknown"
-    return version
-
 def main(argv=None):
     if argv is None:
         argv = sys.argv
 
     usage = "usage: %prog [<options>] Card1 Card2 Card3 Card4"
-    version = "%prog version " + getVersionString()    
+    version = "%prog version 1.0"
     parser = OptionParser(usage=usage, version=version)
     parser.add_option("-n", "--numDeals", type="int", dest="numDeals",
                       default=1000,

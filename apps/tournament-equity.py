@@ -91,24 +91,12 @@ def parseIntVarArgs(option, opt_str, value, parser):
         value.append(int(parser.rargs.pop(0)))
     setattr(parser.values, option.dest, value)
 
-def getVersionString():
-    """Return our RCS/CVS version string."""
-    import re
-    revisionString = "$Revision$"
-    match = re.match("\$Revision$", revisionString)
-    if match is None:
-        return "unknown"
-    version = match.group(1)
-    if version is None:
-        return "unknown"
-    return version
-
 def main(argv=None):
     if argv is None:
         argv = sys.argv
 
     usage = "usage: %prog -s <stack1> <stack2>... -p <payout1> <payout2>..."
-    version = "%prog version " + getVersionString()
+    version = "%prog version 1.0"
     parser = optparse.OptionParser(usage=usage, version=version)
     parser.add_option("-p", "--payout", dest="payout",
                       action="callback", callback=parseIntVarArgs)

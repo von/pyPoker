@@ -23,24 +23,12 @@ def showProgressCallback(game):
 
 ######################################################################
 
-def getVersionString():
-    """Return our RCS/CVS version string."""
-    import re
-    revisionString = "$Revision$"
-    match = re.match("\$Revision$", revisionString)
-    if match is None:
-        return "unknown"
-    version = match.group(1)
-    if version is None:
-        return "unknown"
-    return version
-
 def main(argv=None):
     if argv is None:
         argv = sys.argv
 
     usage = "usage: %prog [<options>]"
-    version = "%prog version " + getVersionString()
+    version = "%prog version 1.0"
     parser = OptionParser(usage)
     parser.add_option("-B", "--board", type="string", dest="board",
                       metavar="cards", help="specify the flop")

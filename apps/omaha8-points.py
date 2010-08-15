@@ -5,26 +5,12 @@ from optparse import OptionParser
 import sys
 from pyPoker.Hand import OmahaHand
 
-######################################################################
-
-def getVersionString():
-    """Return our RCS/CVS version string."""
-    import re
-    revisionString = "$Revision$"
-    match = re.match("\$Revision$", revisionString)
-    if match is None:
-        return "unknown"
-    version = match.group(1)
-    if version is None:
-        return "unknown"
-    return version
-
 def main(argv=None):
     if argv is None:
         argv = sys.argv
 
     usage = "usage: %prog [<options>] <card1> <card2> <card3> <card4>"
-    version = "%prog version " + getVersionString()
+    version = "%prog version 1.0"
     parser = OptionParser(usage=usage, version=version)
 
     (options, args) = parser.parse_args()
