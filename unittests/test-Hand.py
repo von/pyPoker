@@ -97,12 +97,14 @@ class TestSequenceFunctions(unittest.TestCase):
 	count = 0
 	for combs in hand.combinations(2):
 	    count += 1
-	    self.assertEquals(len(combs), 2, "combs = %s" % combs)
+	    self.assertEquals(len(combs), 2,
+                              "combs = %s (len = %d)" % (combs, len(combs)))
 	self.assertEquals(count, 6)
 	count = 0
 	for combs in hand.hands():
 	    count += 1
-	    self.assertEquals(len(combs), 5, "combs = %s" % combs)
+	    self.assertEquals(len(combs), 5,
+                              "combs = %s (len = %d)" % (combs, len(combs)))
 	self.assertEquals(count, 60)
 
     def testOmahaPoints(self):
