@@ -2,7 +2,8 @@
 """Unittests for Hand module"""
 
 from pyPoker.Cards import Card, Suit, Rank
-from pyPoker.Hand import Hand, Board, OmahaHand, HoldEmHand
+from pyPoker.Hand import Hand, Board, OmahaHand
+from pyPoker import HoldEm
 import unittest
 
 class TestSequenceFunctions(unittest.TestCase):
@@ -32,7 +33,7 @@ class TestSequenceFunctions(unittest.TestCase):
 
     def testBoardCombinations(self):
 	"""Test combinations with board."""
-	hand = HoldEmHand.fromString("AD 2D")
+	hand = HoldEm.Hand.fromString("AD 2D")
 	board = Board.fromString("3D 4D 5D")
 	hand.setBoard(board)
 	count = 0

@@ -69,10 +69,10 @@ UNITTESTS = \
 	test-Deck \
 	test-Hand \
 	test-Hands \
+	test-HoldEm \
 	test-LowRanker \
 	test-PokerRank \
 	test-HandGenerator \
-	test-HoldEmStartingHandRanker \
 	test-PokerGame \
 	test-Ranker
 

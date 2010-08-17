@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """Unittests for Deck module"""
 
-from pyPoker.Hand import Hand, HoldEmHand
+from pyPoker.Hand import Hand
+from pyPoker import HoldEm
 from pyPoker.Deck import Deck
 import unittest
 
@@ -38,7 +39,7 @@ class TestSequenceFunctions(unittest.TestCase):
 	"""Test creating multiple hands."""
 	deck = Deck()
 	deck.shuffle()
-	hands = deck.createHands(8, handClass=HoldEmHand)
+	hands = deck.createHands(8, handClass=HoldEm.Hand)
 	self.assertEquals(len(hands), 8)
 	for hand in hands:
 	    self.assertEquals(len(hand), 2)

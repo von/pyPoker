@@ -5,7 +5,7 @@ from optparse import OptionParser
 import sys
 import string
 from pyPoker.Cards import Card, Cards, Suit, Rank
-from pyPoker.Hand import HoldEmHand
+from pyPoker import HoldEm
 from pyPoker.HoldEmStartingHandRanker import HoldEmStartingHandRanker
 from pyPoker.Deck import Deck
 
@@ -27,7 +27,7 @@ def evaluateHand(hand, numDeals, numHands):
 	deck.shuffle()
 	hands = []
 	for h in range(numHands):
-	    hands.append(HoldEmHand())
+	    hands.append(HoldEm.Hand())
 	deck.dealHands(hands)
 	for h in range(numHands):
 	    rank = HoldEmStartingHandRanker.rankHand(hands[h])
@@ -70,7 +70,7 @@ def main(argv=None):
                 continue
             cards = Cards([Card((topRank, Suit.CLUBS)),
                            Card((lowRank, Suit.SPADE))])
-            hand = HoldEmHand(cards)
+            hand = HoldEm.Hand(cards)
             betterThan = evaluateHand(hand, options.numDeals, options.numHands)
             print hand,
             for h in range(options.numHands):
@@ -83,7 +83,7 @@ def main(argv=None):
     for rank in Rank.ranks:
         cards = Cards([Card((rank, Suit.CLUBS)),
                        Card((rank, Suit.SPADE))])
-        hand = HoldEmHand(cards)
+        hand = HoldEm.Hand(cards)
         betterThan = evaluateHand(hand, options.numDeals, options.numHands)
         print hand,
         for h in range(options.numHands):

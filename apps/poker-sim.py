@@ -4,7 +4,8 @@
 from optparse import OptionParser
 import sys
 import string
-from pyPoker.PokerGame import PokerGame, HoldEmGame, FiveCardStudGame, FiveCardStudHiLoGame, SevenCardStudGame, SevenCardStudHiLoGame, OmahaGame, OmahaHiLoGame
+from pyPoker import HoldEm
+from pyPoker.PokerGame import PokerGame, FiveCardStudGame, FiveCardStudHiLoGame, SevenCardStudGame, SevenCardStudHiLoGame, OmahaGame, OmahaHiLoGame
 from pyPoker.Hand import Hand, Board
 from pyPoker.Hands import Hands
 from pyPoker.Cards import Cards
@@ -52,7 +53,7 @@ def main(argv=None):
     (options, args) = parser.parse_args()
 
     game = {
-        "holdem" : HoldEmGame,
+        "holdem" : HoldEm.Game,
         "5cardstud" : FiveCardStudGame,
         "fivecardstud" : FiveCardStudGame,
         "5cardstudhilo" : FiveCardStudHiLoGame,

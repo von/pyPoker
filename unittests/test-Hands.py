@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Unittests for Hands module"""
 
-from pyPoker.Hands import HoldEmHands
+import pyPoker.HoldEm
 from pyPoker.slanskyHands import SlanskyHand
 from pyPoker.Cards import Rank
 import unittest
@@ -10,27 +10,6 @@ class TestSequenceFunctions(unittest.TestCase):
 
     def setUp(self):
 	pass
-
-    def testHoldEmHands(self):
-	hands = HoldEmHands()
-	hands.addHandGroup("AKs")
-	self.assertEquals(len(hands), 4)
-	hands.__str__()
-	hands.addHandGroup("JT")
-	self.assertEquals(len(hands), 16)
-	hands.__str__()
-	hands.addAllHands(Rank.SEVEN, Rank.NINE)
-	self.assertEquals(len(hands), 32)
-	hands.__str__()
-	hands.addPair(Rank.SIX)
-	self.assertEquals(len(hands), 38)
-	hands.__str__()
-	hands.addSuitedAceXHands()
-	self.assertEquals(len(hands), 70)
-	hands.__str__()
-	hands.addSuitedKingXHands()
-	self.assertEquals(len(hands), 102)
-	hands.__str__()
 
     def testSlanskyHands(self):
 	self.assertEquals(len(SlanskyHand['class1']), 28,

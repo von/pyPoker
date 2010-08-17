@@ -238,21 +238,6 @@ class CommunityCardHand(Hand):
 	c.extend(self)
 	return c
  
-######################################################################
-#
-# Texas HoldEm
-#
-
-
-class HoldEmHand(CommunityCardHand):
-    maxCards = 2
-    boardClass = FiveCardBoard
-
-    def __init__(self, cards = None, board = None):
-	"""Create a Texas Hold'Em hand.
-	cards should be none or an array of up to two cards.
-	board should be a Board object."""
-	CommunityCardHand.__init__(self, cards, board = board)
 
 ######################################################################
 #

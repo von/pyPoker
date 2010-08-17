@@ -2,7 +2,7 @@
 """What are our chances of our HoldEm hand being dominated?"""
 
 from optparse import OptionParser
-from pyPoker.Hand import HoldEmHand
+from pyPoker import HoldEm
 from pyPoker.Cards import Card, Rank
 from pyPoker.Deck import Deck
 from pyPoker.PredefinedCards import *
@@ -26,8 +26,8 @@ def main(argv=None):
 
     for rank1 in range(Eight, King):
         for rank2 in range(rank1 + 1, Ace):
-            hand = HoldEmHand([Card((rank1, Clubs)),
-                               Card((rank2, Clubs))])
+            hand = HoldEm.Hand([Card((rank1, Clubs)),
+                                Card((rank2, Clubs))])
 
             rank = HoldEmStartingHandRanker.rankHand(hand)
 
@@ -40,7 +40,7 @@ def main(argv=None):
             for deal in range(options.numDeals):
                 deck = startingDeck.copy()
                 deck.shuffle()
-                hands = deck.createHands(8, HoldEmHand)
+                hands = deck.createHands(8, HoldEm.Hand)
                 dominated = False
                 for h in hands:
                     if ((h[0].rank == hand[0].rank) or

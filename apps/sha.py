@@ -5,9 +5,7 @@ from optparse import OptionParser
 import sys
 import string
 import os
-from pyPoker.PokerGame import HoldEmGame
-from pyPoker.Hands import HoldEmHands
-from pyPoker.HandGenerator import HoldEmHandGenerator
+from pyPoker import HoldEm
 from pyPoker.slanskyHands import SlanskyHand
 from pyPoker.Hand import Board
 
@@ -48,7 +46,7 @@ except OSError, e:
     print "Could not read configuration file: %s" % e
     sys.exit(1)
 
-game = HoldEmGame()
+game = HoldEm.Game()
 
 if options.verbose:
     print "Reading hands from %s..." % configFileName
@@ -66,7 +64,7 @@ handTypes.update(SlanskyHand)
 handNum = 1
 while True:
     sectionName = "hand%d" % handNum
-    hg = HoldEmHandGenerator()
+    hg = HoldEm.HandGenerator()
     hg.setName(sectionName)
     try:
 	# Set raw to True so we don't try to parse %'s
@@ -87,7 +85,7 @@ while True:
 	    hg.addHands(handTypes[handstr], percent)
 	    print "%s hand generator" % handstr
 	else:
-	    hands = HoldEmHands()
+	    hands = HoldEm.Hands()
 	    for s in handstr.split():
 		hands.addHandGroup(s)
 	    hg.addHands(hands, percent)

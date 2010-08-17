@@ -101,8 +101,3 @@ class HandGenerator:
 	for h in self.hands:
 	    per, hand = h
 	    print "%d%%: %s" % (per, hand)
-
-class HoldEmHandGenerator(HandGenerator):
-    from Hand import HoldEmHand
-    handClass = HoldEmHand
-

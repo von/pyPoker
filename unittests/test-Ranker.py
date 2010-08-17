@@ -3,8 +3,9 @@
 
 from pyPoker.BitField import BitField
 from pyPoker.Cards import Cards, Rank, Suit
-from pyPoker.Hand import Board, Hand, HoldEmHand, OmahaHand
+from pyPoker.Hand import Board, Hand, OmahaHand
 from pyPoker.Hands import Hands
+from pyPoker import HoldEm
 from pyPoker.PokerRank import PokerRank
 from pyPoker.Ranker import Ranker
 import unittest
@@ -191,7 +192,7 @@ class TestSequenceFunctions(unittest.TestCase):
     def testBoard(self):
 	"""Verify ranking with board."""
 	board = Board.fromString("5C 2S 4D")
-	hand = HoldEmHand.fromString("AC 2C")
+	hand = HoldEm.Hand.fromString("AC 2C")
 	hand.setBoard(board)
 	rank = self.ranker.rankHand(hand)
 	self.assertEqual(rank.getType(), PokerRank.PAIR,

@@ -1,7 +1,7 @@
 """Class for simulating poker games."""
 
 from PokerException import PokerException
-from Hand import Hand, CommunityCardHand, HoldEmHand, FiveCardStudHand, SevenCardStudHand, OmahaHand
+from Hand import Hand, CommunityCardHand, FiveCardStudHand, SevenCardStudHand, OmahaHand
 from Hands import Hands
 from Cards import Cards
 from Deck import Deck
@@ -379,10 +379,6 @@ class CommunityCardPokerGame(PokerGame):
 	if board is None:
 	    board = self.handClass.boardClass()
 	self.setBoard(board)
-
-class HoldEmGame(CommunityCardPokerGame):
-    handClass = HoldEmHand
-    gameName = "Texas Hold'em"
 
 class FiveCardStudGame(PokerGame):
     handClass = FiveCardStudHand

@@ -4,7 +4,7 @@ given high card. In other words there is not another suited hand out
 there (of the same suite) that is higher."""
 
 from optparse import OptionParser
-from pyPoker.Hand import HoldEmHand
+from pyPoker import HoldEm
 from pyPoker.Cards import Card, Suit, Rank
 from pyPoker.Deck import Deck
 import sys
@@ -46,7 +46,7 @@ def main(argv=None):
 
     for rank in range(Rank.FIVE, Rank.ACE):
         startingDeck = Deck()
-        hand = HoldEmHand()
+        hand = HoldEm.Hand()
         startingDeck.dealCard(hand, Card((Rank(rank), suit)))
         startingDeck.dealCard(hand, Card((Rank(Rank.TWO), suit)))
         otherSuitedHands = 0
@@ -54,7 +54,7 @@ def main(argv=None):
         for i in xrange(options.numDeals):
             deck = startingDeck.copy()
             deck.shuffle()
-            hands = deck.createHands(options.numHands, handClass=HoldEmHand)
+            hands = deck.createHands(options.numHands, handClass=HoldEm.Hand)
             otherSuitedHand = 0
             betterSuitedHand = 0
             for h in hands:
