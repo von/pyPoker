@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 """Unittests for LowRanker module"""
 
+from pyPoker import Omaha
 from pyPoker.Cards import Cards, Rank, Suit
-from pyPoker.Hand import Board, Hand, OmahaHand
+from pyPoker.Hand import Board, Hand
 from pyPoker.Hands import Hands
 from pyPoker.LowRanker import LowRanker
 from pyPoker.PokerRank import PokerRank
@@ -110,7 +111,7 @@ class TestSequenceFunctions(unittest.TestCase):
 
     def testOmahaLow(self):
 	"""Test Omaha low hand ranking."""
-	hand = OmahaHand.fromString("5D 6H 9H 3C")
+	hand = Omaha.Hand.fromString("5D 6H 9H 3C")
 	board = Board.fromString("4H 6C JH KH 8C")
 	hand.setBoard(board)
 	rank = self.ranker.rankHand(hand)
@@ -122,7 +123,7 @@ class TestSequenceFunctions(unittest.TestCase):
 
     def testOmahaLow2(self):
 	"""Test Omaha low hand ranking."""
-	hand = OmahaHand.fromString("QC AH TC 8C")
+	hand = Omaha.Hand.fromString("QC AH TC 8C")
 	board = Board.fromString("2H JH 4D 6H 3H")
 	hand.setBoard(board)
 	rank = self.ranker.rankHand(hand)

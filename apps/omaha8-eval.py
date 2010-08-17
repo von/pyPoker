@@ -3,7 +3,7 @@
 
 from optparse import OptionParser
 import sys
-from pyPoker.Hand import OmahaHand
+from pyPoker import Omaha
 from pyPoker.Deck import Deck
 
 ######################################################################
@@ -42,7 +42,7 @@ def main(argv=None):
     for deal in xrange(options.numDeals):
         deck = Deck()
         deck.shuffle()
-        hands = deck.createHands(options.numHands, handClass = OmahaHand)
+        hands = deck.createHands(options.numHands, handClass = Omaha.Hand)
         dealOpeners = 0
         for h in hands:
             value = h.pointValue()

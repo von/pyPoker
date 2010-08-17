@@ -3,9 +3,10 @@
 
 from pyPoker.BitField import BitField
 from pyPoker.Cards import Cards, Rank, Suit
-from pyPoker.Hand import Board, Hand, OmahaHand
+from pyPoker.Hand import Board, Hand
 from pyPoker.Hands import Hands
 from pyPoker import HoldEm
+from pyPoker import Omaha
 from pyPoker.PokerRank import PokerRank
 from pyPoker.Ranker import Ranker
 import unittest
@@ -208,7 +209,7 @@ class TestSequenceFunctions(unittest.TestCase):
 
     def testOmaha(self):
 	"""Test basic Omaha hand ranking."""
-	hand = OmahaHand.fromString("7S QD 2D TD")
+	hand = Omaha.Hand.fromString("7S QD 2D TD")
 	board = Board.fromString("AS AD 4H TH 8D")
 	hand.setBoard(board)
 	rank = self.ranker.rankHand(hand)

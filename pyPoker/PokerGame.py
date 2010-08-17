@@ -1,7 +1,7 @@
 """Class for simulating poker games."""
 
 from PokerException import PokerException
-from Hand import Hand, CommunityCardHand, FiveCardStudHand, SevenCardStudHand, OmahaHand
+from Hand import Hand, CommunityCardHand, FiveCardStudHand, SevenCardStudHand
 from Hands import Hands
 from Cards import Cards
 from Deck import Deck
@@ -395,13 +395,3 @@ class SevenCardStudGame(PokerGame):
 class SevenCardStudHiLoGame(SevenCardStudGame):
     lowHandRankerClass = LowRanker
     gameName = "Seven-card Stud Hi/Lo"
-
-class OmahaGame(CommunityCardPokerGame):
-    handClass = OmahaHand
-    gameName = "Omaha"
-
-class OmahaHiLoGame(OmahaGame):
-    lowHandRankerClass = LowRanker
-    lowHandEightOrBetter = True
-    gameName = "Omaha Hi/Lo 8-or-better"
-

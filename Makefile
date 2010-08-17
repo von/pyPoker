@@ -71,6 +71,7 @@ UNITTESTS = \
 	test-Hands \
 	test-HoldEm \
 	test-LowRanker \
+	test-Omaha \
 	test-PokerRank \
 	test-HandGenerator \
 	test-PokerGame \

@@ -3,7 +3,7 @@
 
 from optparse import OptionParser
 import sys
-from pyPoker.Hand import OmahaHand
+from pyPoker import Omaha
 
 def main(argv=None):
     if argv is None:
@@ -20,7 +20,7 @@ def main(argv=None):
         parser.print_help()
         sys.exit(1)
 
-    hand = OmahaHand.fromStrings(args)
+    hand = Omaha.Hand.fromStrings(args)
     value = hand.pointValue()
 
     if value > 10:

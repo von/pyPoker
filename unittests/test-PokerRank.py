@@ -2,7 +2,7 @@
 """Unittests for PokerRank module"""
 
 from pyPoker.Cards import Rank, Cards
-from pyPoker.Hand import Hand, OmahaHand
+from pyPoker.Hand import Hand
 from pyPoker.Hands import Hands
 from pyPoker.PokerRank import PokerRank
 import unittest

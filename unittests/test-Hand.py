@@ -2,7 +2,7 @@
 """Unittests for Hand module"""
 
 from pyPoker.Cards import Card, Suit, Rank
-from pyPoker.Hand import Hand, Board, OmahaHand
+from pyPoker.Hand import Hand, Board
 from pyPoker import HoldEm
 import unittest
 
@@ -75,56 +75,6 @@ class TestSequenceFunctions(unittest.TestCase):
 		       "AC 2C 9C TC JD" ]:
 	    self.assertEqual(Board.fromString(board).eightLowPossible(),
 			     False, "%s not False" % board)
-
-    def testOmahaLowPossible(self):
-	for hand in [ "AC 2C 3C 4D",
-		      "AC AD 2C 2D",
-		      "7C 8C 9C TC",
-		      "AC 8C JC KC" ]:
-	    self.assertEqual(OmahaHand.fromString(hand).eightLowPossible(),
-			     True, "%s not True" % hand)
-	for hand in [ "AC AH AS 9D",
-		      "AC AD 9C TD",
-		      "7C 9C TC KC",
-		      "AC 9C JC KC" ]:
-	    self.assertEqual(OmahaHand.fromString(hand).eightLowPossible(),
-			     False, "%s not False" % hand)
-
-    def testOmahaCombinations(self):
-	"""Testing Omaha combinations."""
-	hand = OmahaHand.fromString("AC 2C 3C 4C");
-	board = Board.fromString("5C 6C 7C 8C 9C");
-	hand.setBoard(board)
-	count = 0
-	for combs in hand.combinations(2):
-	    count += 1
-	    self.assertEquals(len(combs), 2,
-                              "combs = %s (len = %d)" % (combs, len(combs)))
-	self.assertEquals(count, 6)
-	count = 0
-	for combs in hand.hands():
-	    count += 1
-	    self.assertEquals(len(combs), 5,
-                              "combs = %s (len = %d)" % (combs, len(combs)))
-	self.assertEquals(count, 60)
-
-    def testOmahaPoints(self):
-	"""Test Omaha HiLo point scoring."""
-	hands = {
-	    "AC AD 2C 3D":95,
-	    "AC KH QD JS":16,
-	    "AC AD KH KS":45,
-	    "KS 2S QH 3H":22,
-	    "AC AH AD 4H":35,
-	    "AC 2C 3C 4H":74,
-	    "7C 8C 9C TC":12
-	    }
-	for hand in hands.keys():
-	    value = OmahaHand.fromString(hand).pointValue()
-	    self.assertEquals(value, hands[hand],
-			      "%s == %d != %d points" % (hand, value, 
-							 hands[hand]))
-			  
 
 if __name__ == "__main__":
     unittest.main()
