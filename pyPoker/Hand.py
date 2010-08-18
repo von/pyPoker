@@ -172,15 +172,6 @@ class StudHand(Hand):
 	    string += "xx "
 	return string.strip()
 	    
-class FiveCardStudHand(StudHand):
-    """A five card stud hand."""
-    upCards = [1,2,3,4]
-    maxCards = 5
-
-class SevenCardStudHand(StudHand):
-    """A five card stud hand."""
-    upCards = [2,3,4,5]
-    maxCards = 7
 
 ######################################################################
 #

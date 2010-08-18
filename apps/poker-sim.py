@@ -4,8 +4,7 @@
 from optparse import OptionParser
 import sys
 import string
-from pyPoker import HoldEm, Omaha
-from pyPoker.PokerGame import PokerGame, FiveCardStudGame, FiveCardStudHiLoGame, SevenCardStudGame, SevenCardStudHiLoGame
+from pyPoker import FiveCardStud, HoldEm, Omaha, SevenCardStud 
 from pyPoker.Hand import Hand, Board
 from pyPoker.Hands import Hands
 from pyPoker.Cards import Cards
@@ -54,14 +53,14 @@ def main(argv=None):
 
     game = {
         "holdem" : HoldEm.Game,
-        "5cardstud" : FiveCardStudGame,
-        "fivecardstud" : FiveCardStudGame,
-        "5cardstudhilo" : FiveCardStudHiLoGame,
-        "fivecardstudhilo" : FiveCardStudHiLoGame,
-        "7cardstud" : SevenCardStudGame,
-        "sevencardstud" : SevenCardStudGame,
-        "7cardstudhilo" : SevenCardStudHiLoGame,
-        "sevencardstudhilo" : SevenCardStudHiLoGame,
+        "5cardstud" : FiveCardStud.Game,
+        "fivecardstud" : FiveCardStud.Game,
+        "5cardstudhilo" : FiveCardStud.HiLoGame,
+        "fivecardstudhilo" : FiveCardStud.HiLoGame,
+        "7cardstud" : SevenCardStud.Game,
+        "sevencardstud" : SevenCardStud.Game,
+        "7cardstudhilo" : SevenCardStud.HiLoGame,
+        "sevencardstudhilo" : SevenCardStud.HiLoGame,
         "omaha" : Omaha.Game,
         "omahahilo" : Omaha.HiLoGame,
         }

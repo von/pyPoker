@@ -1,7 +1,7 @@
 """Class for simulating poker games."""
 
 from PokerException import PokerException
-from Hand import Hand, CommunityCardHand, FiveCardStudHand, SevenCardStudHand
+from Hand import Hand, CommunityCardHand
 from Hands import Hands
 from Cards import Cards
 from Deck import Deck
@@ -380,18 +380,3 @@ class CommunityCardPokerGame(PokerGame):
 	    board = self.handClass.boardClass()
 	self.setBoard(board)
 
-class FiveCardStudGame(PokerGame):
-    handClass = FiveCardStudHand
-    gameName = "Five-card Stud"
-
-class FiveCardStudHiLoGame(FiveCardStudGame):
-    lowHandRankerClass = LowRanker
-    gameName = "Five-card Stud Hi/Lo"
-
-class SevenCardStudGame(PokerGame):
-    handClass = SevenCardStudHand
-    gameName = "Seven-card Stud"
-
-class SevenCardStudHiLoGame(SevenCardStudGame):
-    lowHandRankerClass = LowRanker
-    gameName = "Seven-card Stud Hi/Lo"
