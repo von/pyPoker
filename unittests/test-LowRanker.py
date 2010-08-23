@@ -109,6 +109,27 @@ class TestSequenceFunctions(unittest.TestCase):
 				     ( i, hands[i], ranks[i],
 				       j, hands[j], ranks[j]))
 
+
+    def testBestHand(self):
+        """Test bestHand() method"""
+        hands = [
+            Hand.fromString("AC 9D KS 3D KH"), # Pair of Kings
+            Hand.fromString("9C TS QH JC 8H"), # Q-high
+            Hand.fromString("KD TH 7C 6C 2H"), # K-high
+            Hand.fromString("AD JD 8D 4D 2D"), # J-high
+            Hand.fromString("7S QD QS QC 6D"), # Trip queens
+            Hand.fromString("8S 7C 2C 3D 5H"), # 8-high
+            ]
+        best_hands, best_rank = self.ranker.bestHand(hands)
+        self.assertIsNotNone(best_hands)
+        self.assertIsInstance(best_hands, list)
+        self.assertEqual(len(best_hands), 1)
+        self.assertEqual(best_hands[0], 5) # 8-high
+        self.assertIsNotNone(best_rank)
+        self.assertIsInstance(best_rank, PokerRank)
+        self.assertEqual(best_rank.getType(), PokerRank.HIGH_CARD)
+        self.assertEqual(best_rank.getPrimaryCardRank(), Rank.EIGHT)
+
     def testOmahaLow(self):
 	"""Test Omaha low hand ranking."""
 	hand = Omaha.Hand.fromString("5D 6H 9H 3C")
