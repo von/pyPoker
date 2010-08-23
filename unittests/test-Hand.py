@@ -2,7 +2,7 @@
 """Unittests for Hand module"""
 
 from pyPoker.Cards import Card, Suit, Rank
-from pyPoker.Hand import Hand, Board
+from pyPoker.Hand import Hand, Board, TooManyCardsException
 from pyPoker import HoldEm
 import unittest
 
@@ -21,6 +21,14 @@ class TestSequenceFunctions(unittest.TestCase):
 	self.assertEquals(hand[1].rank, Rank.NINE)
 	self.assertEquals(hand[2].suit, Suit.HEARTS)
 	self.assertEquals(hand[2].rank, Rank.TEN)
+
+    def test_too_many_cards(self):
+        """Test adding too many cards to a hand."""
+        hand = Hand.fromString("AC 2C 3C 4C 5C")
+        self.assertEquals(len(hand), 5)
+        with self.assertRaises(TooManyCardsException):
+            hand.append(Card.fromString("6C"))
+        self.assertEquals(len(hand), 5)
 
     def testCombinations(self):
 	"""Test basic hand combinatins."""

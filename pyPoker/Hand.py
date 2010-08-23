@@ -21,6 +21,10 @@ class HandHasNoBoardException(PokerException):
     """Tried to set or get a board for a hand that doesn't support it."""
     pass
 
+class TooManyCardsException(PokerException):
+    """Tried to add more cards to a Hand then it should hold."""
+    pass
+
 ######################################################################
 #
 # Hand Class
