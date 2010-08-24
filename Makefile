@@ -63,6 +63,7 @@ profiles:
 
 # List in order to be tested
 UNITTESTS = \
+	test-testing \
 	test-Bitfield \
 	test-Cards \
 	test-PredefinedCards \
