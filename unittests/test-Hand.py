@@ -58,6 +58,37 @@ class TestSequenceFunctions(testing.TestCase):
                              count=21,
                              assert_item_function=lambda i: len(i) == 5)
 
+    def test_combinations_of_eight_or_lower(self):
+        """Test combinations_of_eight_or_lower() method"""
+        h = Hand.fromString("AC 2D 3H 4S TH")
+        self.assert_iterator(h.combinations_of_eight_or_lower(5),
+                             count=0)
+        h = Hand.fromString("AC 2D 3H 4S 5H")
+        self.assert_iterator(h.combinations_of_eight_or_lower(5),
+                             count=1,
+                             assert_item_function=lambda i: len(i)==5)
+        
+    def test_combinations_of_eight_or_lower_with_board(self):
+        """Test combinations_of_eight_or_lower() method on hand with board"""
+        hand = HoldEm.Hand.fromString("AD 2D")
+	board = Board.fromString("3D 4D 5D")
+	hand.setBoard(board)
+        self.assert_iterator(hand.combinations_of_eight_or_lower(2),
+                             count=10,
+                             assert_item_function=lambda i: len(i)==2)
+        self.assert_iterator(hand.combinations_of_eight_or_lower(5),
+                             count=1,
+                             assert_item_function=lambda i: len(i)==5)
+	board.addCardFromString("6D")
+        self.assert_iterator(hand.combinations_of_eight_or_lower(5),
+                             count=6,
+                             assert_item_function=lambda i: len(i)==5)
+        # Now add a card that should have no effect on results
+	board.addCardFromString("TD")
+        self.assert_iterator(hand.combinations_of_eight_or_lower(5),
+                             count=6,
+                             assert_item_function=lambda i: len(i)==5)
+
     def testBoardToString(self):
 	board = Board.fromString("7C 8C 9C")
 	self.assertEqual("%s" % board, "7C 8C 9C xx xx")

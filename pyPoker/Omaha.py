@@ -1,5 +1,7 @@
 """Omaha Classes"""
 
+import itertools
+
 from Cards import Rank, Suit
 from Hand import CommunityCardHand, FiveCardBoard
 from LowRanker import LowRanker
@@ -37,6 +39,43 @@ class Hand(CommunityCardHand):
 		    yield combo
 	else:
 	    raise NotEnoughCardsException("Cannout generated hand of %d cards without board." % n)
+
+    def combinations_of_eight_or_lower(self, n):
+        """Generator function returns all combinations (including community
+        cards) of n cards that are 8 or lower (including aces).
+
+        If player doesn't have two hole cards 8 or lower, always
+        returns nothing.
+
+        If there aren't n cards 8 or lower, return noths."""
+        # Must use two cards from hole cards
+        hole_cards = self.getEightOrLower().removeDuplicateRanks()
+        if len(hole_cards) < 2:
+            return iter([])
+        if self.board:
+            board_cards = self.board.getEightOrLower().removeDuplicateRanks()
+        else:
+            board_cards = Cards()
+        # If we can't make n cards only using 2 from board, return nothing
+        if (len(board_cards) + 2) < n:
+            return iter([])
+        if n <= 2:
+            return hole_cards.combinations(2)
+        else:
+            return self._combinations(hole_cards, board_cards, n)
+
+    @classmethod
+    def _combinations(cls, hole_cards, board_cards, n):
+        """Return generator of n cards using 2 hole_cards and board_cards.
+
+        n must be > 2."""
+        assert(n>2)
+        for hole_combo in hole_cards.combinations(2):
+            for board_combo in board_cards.combinations(n-2):
+                # Make copy so we don't distubte original
+                combo = hole_combo.copy()
+                combo.extend(board_combo)
+                yield combo
 
     def eightLowPossible(self):
 	"""Return true if this hand can have a eight or better low."""

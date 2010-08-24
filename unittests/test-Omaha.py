@@ -35,6 +35,45 @@ class TestSequenceFunctions(testing.TestCase):
         self.assert_iterator(hand.hands(), count=60,
                              assert_item_function=lambda i: len(i) == 5)
 
+    def test_combinations_of_eight_or_lower(self):
+        """Test combinations_of_eight_or_lower() method on hand with board"""
+        # Hand doesn't have two low cards, can't make low
+        hand = Omaha.Hand.fromString("AD 9D JS QS")
+	board = Board.fromString("3D 4D 5D")
+	hand.setBoard(board)
+        self.assert_iterator(hand.combinations_of_eight_or_lower(5),
+                             count=0)
+        # Board doesn't have three low cards, can't make low
+        hand = Omaha.Hand.fromString("AD 9D 7D QS")
+	board = Board.fromString("3D KD 5D")
+	hand.setBoard(board)
+        self.assert_iterator(hand.combinations_of_eight_or_lower(5),
+                             count=0)
+        # Three low cards in hand, 3 on board == 3 possible lows
+        hand = Omaha.Hand.fromString("AD 9D 7D 8S")
+	board = Board.fromString("3D 4D 5D")
+	hand.setBoard(board)
+        self.assert_iterator(hand.combinations_of_eight_or_lower(5),
+                             count=3,
+                             assert_item_function=lambda i: len(i)==5)
+        # Two low cards in hand, 3 on board == 1 possible low
+        hand = Omaha.Hand.fromString("AD 9D 7D QS")
+	board = Board.fromString("3D 4D 5D")
+	hand.setBoard(board)
+        self.assert_iterator(hand.combinations_of_eight_or_lower(5),
+                             count=1,
+                             assert_item_function=lambda i: len(i)==5)
+        # Add a low card to the board for 2 in hand, 4 on board == 4 combos
+	board.addCardFromString("6D")
+        self.assert_iterator(hand.combinations_of_eight_or_lower(5),
+                             count=4,
+                             assert_item_function=lambda i: len(i)==5)
+        # Add a high card to board, should have no change
+	board.addCardFromString("TD")
+        self.assert_iterator(hand.combinations_of_eight_or_lower(5),
+                             count=4,
+                             assert_item_function=lambda i: len(i)==5)
+
     def testPoints(self):
 	"""Test Omaha HiLo point scoring."""
 	hands = {

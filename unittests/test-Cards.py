@@ -65,6 +65,17 @@ class TestSequenceFunctions(testing.TestCase):
         c.makeAcesHigh()
         self.assertEquals(c.rank, Rank.NINE)
 
+    def testIsEightOrLower(self):
+        """Test IsEightOrLower() method"""
+        for rank in range(Rank.ACE_LOW, Rank.NINE):
+            c = Card((rank, Suit.CLUBS))
+            self.assertTrue(c.isEightOrLower(), "%s failed" % c)
+        for rank in range(Rank.NINE, Rank.ACE):
+            c = Card((rank, Suit.HEARTS))
+            self.assertFalse(c.isEightOrLower(), "%s failed" % c)
+        c = Card((Rank.ACE, Suit.DIAMONDS))
+        self.assertTrue(c.isEightOrLower(), "%s failed" % c)
+            
     def testSort(self):
 	cards = Cards().fromString("3S KH 7H JD TS")
 	cards.sort()
@@ -109,6 +120,36 @@ class TestSequenceFunctions(testing.TestCase):
         self.assert_iterator(cards.combinations(5),
                              count=21,
                              assert_item_function=lambda i: len(i)==5)
+
+    def testGetEightOrLower(self):
+        """Test getEightOrLower() method"""
+        cards = Cards.fromString("AC TH 7D 8S QD")
+        low_cards = cards.getEightOrLower()
+        self.assertIsNotNone(low_cards)
+        self.assertEqual(len(low_cards), 3)
+        self.assertListEqual(low_cards, Cards.fromString("AC 7D 8S"))
+        cards = Cards.fromString("AC 5H 7D 8S 2D")
+        low_cards = cards.getEightOrLower()
+        self.assertIsNotNone(low_cards)
+        self.assertEqual(len(low_cards), 5)
+        self.assertListEqual(low_cards, Cards.fromString("AC 5H 7D 8S 2D"))
+        cards = Cards.fromString("JC TH 9D KS QD")
+        low_cards = cards.getEightOrLower()
+        self.assertIsNotNone(low_cards)
+        self.assertEqual(len(low_cards), 0)
+
+    def testRemoveDuplicateRranks(self):
+        """Test removeDuplicateRanks() method"""
+        # Two 4's and one ace should be removed
+        cards = Cards.fromString("8D 4C AH 9D 4H KC 4S AC")
+        pruned_cards = cards.removeDuplicateRanks()
+        self.assertIsNotNone(pruned_cards)
+        self.assertEqual(len(pruned_cards), 5)
+        # Nothing should be removed
+        cards = Cards.fromString("8D 4C AH 9D 5H KC 3S JC")
+        pruned_cards = cards.removeDuplicateRanks()
+        self.assertIsNotNone(pruned_cards)
+        self.assertEqual(len(pruned_cards), 8)
 
 if __name__ == "__main__":
     testing.main()

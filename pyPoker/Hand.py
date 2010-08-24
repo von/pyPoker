@@ -111,6 +111,20 @@ class Hand(Cards):
 	    cards.extend(self.board)
 	return Cards.combinations(cards, n)
 
+    def combinations_of_eight_or_lower(self, n):
+        """Generator function returns all combinations (including community
+        cards) of n cards that are 8 or lower (including aces).
+
+        If there aren't n cards 8 or lower, return noths."""
+        cards = self.getEightOrLower()
+        if self.board:
+            cards.extend(self.board.getEightOrLower())
+        cards = cards.removeDuplicateRanks()
+        # Do not fail if we don't have enough cards 8 or lower
+        if len(cards) < n:
+            return iter([])
+        return Cards.combinations(cards, n)
+
     def eq(self, otherHand):
 	"""Are two hands identical (including suits)?"""
 	if len(self) != len(otherHand):

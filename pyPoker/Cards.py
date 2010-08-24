@@ -219,6 +219,11 @@ class Card:
         if self.rank == Rank.ACE_LOW:
             self.rank = Rank(Rank.ACE)
 
+    def isEightOrLower(self):
+        """Return True if this card is an eight or lower (including ace)"""
+        return  ((self.rank <= Rank.EIGHT) or
+                 (self.rank == Rank.ACE))
+
 ######################################################################
 #
 # Cards Object
@@ -333,6 +338,16 @@ class Cards(list):
 		continue
 	    index += 1
 
+    def removeDuplicateRanks(self):
+        """Returns cards removing cards except first with same rank. Order preserved."""
+        # Kudos: Dave Kirby via http://www.peterbe.com/plog/uniqifiers-benchmark
+        seen = set()
+        # seen.add() always returns None, so and block in following is
+        # just a language trick to add the card to seen in an if
+        # statement.
+        return Cards([card for card in self \
+                          if card.rank not in seen and not seen.add(card.rank)])
+
     def suitCount(self, suit):
 	"""Return number of cards of given suit."""
 	count = 0
@@ -377,4 +392,6 @@ class Cards(list):
 		count += 1
 	return count
 
-    
+    def getEightOrLower(self):
+        """Return subset of cards that are eight or lower in rank (including ace)"""
+        return Cards(filter(lambda card: card.isEightOrLower(), self))
