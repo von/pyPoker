@@ -303,10 +303,8 @@ class PokerGame:
 		# Hand cannot qualify for low, don't bother checking
 		continue
 	    rank = self.lowHandRanker.rankHand(hand)
-	    if (self.lowHandEightOrBetter and
-		(not rank.isEightOrBetterLow())):
-		# Hand did not qualify for low
-		continue
+            if rank is None:
+                continue
 	    if ((bestLowRank is None) or
 		(rank < bestLowRank)):
 		lowWinners = [index]

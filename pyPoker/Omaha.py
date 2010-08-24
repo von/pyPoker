@@ -4,7 +4,7 @@ import itertools
 
 from Cards import Rank, Suit
 from Hand import CommunityCardHand, FiveCardBoard
-from LowRanker import LowRanker
+from LowRanker import EightLowRanker
 from PokerGame import CommunityCardPokerGame
 from Utils import assertInstance
 
@@ -174,7 +174,7 @@ class Game(CommunityCardPokerGame):
     gameName = "Omaha"
 
 class HiLoGame(Game):
-    lowHandRankerClass = LowRanker
+    lowHandRankerClass = EightLowRanker
     lowHandEightOrBetter = True
     gameName = "Omaha Hi/Lo 8-or-better"
 
