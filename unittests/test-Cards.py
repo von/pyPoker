@@ -2,9 +2,10 @@
 """Unittests for Cards module"""
 
 from pyPoker.Cards import Card, Cards, Suit, Rank, BadRankException
-import unittest
 
-class TestSequenceFunctions(unittest.TestCase):
+import testing
+
+class TestSequenceFunctions(testing.TestCase):
 
     def testSuitStr(self):
         """Test converting Suit to string."""
@@ -98,22 +99,16 @@ class TestSequenceFunctions(unittest.TestCase):
     def testCombinations(self):
 	"""Test basic hand combinatins."""
 	cards = Cards.fromString("8C 9D 7C 6S AH")
-	count = 0
-	for combs in cards.combinations(2):
-	    count += 1
-	    self.assertEquals(len(combs), 2)
-	self.assertEquals(count, 10)
-	count = 0
-	for combs in cards.combinations(5):
-	    count += 1
-	    self.assertEquals(len(combs), 5)
-	self.assertEquals(count, 1)
+        self.assert_iterator(cards.combinations(2),
+                             count=10,
+                             assert_item_function=lambda i: len(i)==2)
+        self.assert_iterator(cards.combinations(5),
+                             count=1,
+                             assert_item_function=lambda i: len(i)==5)
 	cards.addCardsFromString("AS 2C")
-	count = 0
-	for combs in cards.combinations(5):
-	    count += 1
-	    self.assertEquals(len(combs), 5)
-	self.assertEquals(count, 21)
+        self.assert_iterator(cards.combinations(5),
+                             count=21,
+                             assert_item_function=lambda i: len(i)==5)
 
 if __name__ == "__main__":
-    unittest.main()
+    testing.main()

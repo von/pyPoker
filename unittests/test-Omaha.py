@@ -3,9 +3,10 @@
 
 from pyPoker.Hand import Board
 from pyPoker import Omaha
-import unittest
 
-class TestSequenceFunctions(unittest.TestCase):
+import testing
+
+class TestSequenceFunctions(testing.TestCase):
 
     def testLowPossible(self):
         """Test eightLowPossible() method"""
@@ -29,18 +30,10 @@ class TestSequenceFunctions(unittest.TestCase):
 	hand = Omaha.Hand.fromString("AC 2C 3C 4C");
 	board = Board.fromString("5C 6C 7C 8C 9C");
 	hand.setBoard(board)
-	count = 0
-	for combs in hand.combinations(2):
-	    count += 1
-	    self.assertEquals(len(combs), 2,
-                              "combs = %s (len = %d)" % (combs, len(combs)))
-	self.assertEquals(count, 6)
-	count = 0
-	for combs in hand.hands():
-	    count += 1
-	    self.assertEquals(len(combs), 5,
-                              "combs = %s (len = %d)" % (combs, len(combs)))
-	self.assertEquals(count, 60)
+        self.assert_iterator(hand.combinations(2), count=6,
+                             assert_item_function=lambda i: len(i) == 2)
+        self.assert_iterator(hand.hands(), count=60,
+                             assert_item_function=lambda i: len(i) == 5)
 
     def testPoints(self):
 	"""Test Omaha HiLo point scoring."""
@@ -77,4 +70,4 @@ class TestSequenceFunctions(unittest.TestCase):
 	game.simulateGames(numGames=10)
 
 if __name__ == "__main__":
-    unittest.main()
+    testing.main()
