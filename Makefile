@@ -73,6 +73,8 @@ UNITTESTS = \
 	test-HoldEm \
 	test-LowRanker \
 	test-Omaha \
+	test-FiveCardStud \
+	test-SevenCardStud \
 	test-PokerRank \
 	test-HandGenerator \
 	test-PokerGame \

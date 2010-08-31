@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 """Unittests for Omaha module"""
 
+from pyPoker.Deck import Deck
 from pyPoker.Hand import Board
 from pyPoker import Omaha
+from pyPoker.PokerGame import Result, Stats
 
 import testing
 
@@ -91,22 +93,45 @@ class TestSequenceFunctions(testing.TestCase):
 			      "%s == %d != %d points" % (hand, value, 
 							 hands[hand]))
 
+    def test_Simulator(self):
+        """Test HoldEm.Simulator"""
+        simulator = Omaha.Simulator()
+        self.assertIsNotNone(simulator)
+        self.assertEqual(simulator.GAME_NAME, "Omaha")
+        result = simulator.simulate_game()
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, Result)
+        stats = simulator.simulate_games(number_of_games=4)
+        self.assertIsNotNone(stats)
+        self.assertIsInstance(stats, Stats)
 
-    def testGame(self):
-	"""Test OmahaGame."""
-	game = Omaha.Game()
-	game.setBoard(Board.fromString("5C 2S 4D"))
-	game.addHand(Omaha.Hand.fromString("AC 2C"))
-	game.addHand(Omaha.Hand.fromString("AH KH"))
-	game.simulateGames(numGames=10)
+    def test_HiLoSimulator(self):
+        """Test HoldEm.HiLoSimulator"""
+        simulator = Omaha.HiLoSimulator()
+        self.assertIsNotNone(simulator)
+        self.assertEqual(simulator.GAME_NAME, "Omaha Hi/Lo 8-or-better")
+        result = simulator.simulate_game()
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, Result)
+        stats = simulator.simulate_games(number_of_games=4)
+        self.assertIsNotNone(stats)
+        self.assertIsInstance(stats, Stats)
 
-    def testHiLoGame(self):
-	"""Test OmahaHiLoGame."""
-	game = Omaha.HiLoGame()
-	game.setBoard(Board.fromString("5C 2S 4D"))
-	game.addHand(Omaha.Hand.fromString("AC 2C"))
-	game.addHand(Omaha.Hand.fromString("AH KH"))
-	game.simulateGames(numGames=10)
+    def test_Simulator_with_predefined(self):
+        """Test Simulator with HoldEm hands and board"""
+        deck = Deck()
+        board = Board()
+        deck.dealHands(board)
+        hands = deck.createHands(9, handClass=Omaha.Hand)
+        simulator = Omaha.Simulator(predefined_hands=hands,
+                                    predefined_board=board)
+        self.assertIsNotNone(simulator)
+        result = simulator.simulate_game()
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, Result)
+        stats = simulator.simulate_games(number_of_games=4)
+        self.assertIsNotNone(stats)
+        self.assertIsInstance(stats, Stats)
 
 if __name__ == "__main__":
     testing.main()

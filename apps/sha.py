@@ -8,31 +8,33 @@ import os
 from pyPoker import HoldEm
 from pyPoker.slanskyHands import SlanskyHand
 from pyPoker.Hand import Board
+from pyPoker.Hands import Hands
 
 ######################################################################
 #
 # Callback for displaying each hand
 #
 
-def showHandCallback(game, result):
-	output_game(result)
+def showHandCallback(simulator, result):
+    output_game(result)
+    
 
 ######################################################################
 #
 # Output routines
 
-def output_stats(game, stats):
-    hands = game.getHands()
+def output_stats(simulation, stats):
     high_winners = stats.get_high_winners()
     low_winners = stats.get_low_winners()
     scoops = stats.get_scoops()
     number_of_games = stats.get_number_of_games()
-    for index in range(game.getNumHands()):
+    predefined_hands = simulation.get_predefined_hands()
+    for index in range(stats.get_number_of_hands()):
         print "%2d:" % (index + 1),
-        if index >= len(hands):
-            print "XX " * game.getHandClass().getMaxCards(),
+        if index >= len(predefined_hands):
+            print "XX " * simulation.HandClass.getMaxCards(),
         else:
-            print "%s " % hands[index],
+            print "%s " % predefined_hands[index],
         if high_winners is not None:
             print "High wins %4d (%3.0f%%)" % (
                 high_winners[index],
@@ -42,16 +44,16 @@ def output_stats(game, stats):
                 low_winners[index],
                 100.0 * low_winners[index] / number_of_games),
         if (low_winners is not None) and (high_winners is not None):
-            print " Scoops: %d" % scoops[index],
-        print
+		print " Scoops: %d" % scoops[index],
+	print
 
 def output_game(result):
-	if result.board is not None:
-	    print "Board: %s " % result.board,
-	if result.high_winners is not None:
-	    print "High: %s " % result.winning_high_rank,
-            print "(%s) " % (",".join(["%d:%s" % (hand + 1, result.hands[hand])
-                                      for hand in result.high_winners])),
+    if result.board is not None:
+        print "Board: %s " % result.board,
+    if result.high_winners is not None:
+        print "High: %s " % result.winning_high_rank,
+        print "(%s) " % (",".join(["%d:%s" % (hand + 1, result.hands[hand])
+				   for hand in result.high_winners])),
 	if result.low_winners is not None:
 	    s += "Low: %s " % result.winning_low_rank,
             print "(%s) " % (",".join(["%d:%s" % (hand + 1, result.hands[hand])
@@ -62,7 +64,7 @@ def output_game(result):
                               result.high_winners)
             if len(scoopers) == 1:
 		print "(Hand %d scoops)" % (scoopers[0]),
-        print
+    print
 
 ######################################################################
 
@@ -93,8 +95,6 @@ except OSError, e:
     print "Could not read configuration file: %s" % e
     sys.exit(1)
 
-game = HoldEm.Game()
-
 if options.verbose:
     print "Reading hands from %s..." % configFileName
 
@@ -108,53 +108,56 @@ except Exception, e:
 handTypes = {}
 handTypes.update(SlanskyHand)
 
-handNum = 1
+predefined_hands = Hands()
 while True:
-    sectionName = "hand%d" % handNum
-    hg = HoldEm.HandGenerator()
-    hg.setName(sectionName)
+    hand_num = len(predefined_hands) + 1
+    sectionName = "hand%d" % hand_num
     try:
 	# Set raw to True so we don't try to parse %'s
 	items = config.items(sectionName, raw=True)
     except:
-	handNum -= 1
 	break
     if options.verbose:
-	print "Parsing hand %d..." % handNum
+	print "Parsing hand %d..." % hand_num
+    hg = HoldEm.HandGenerator()
+    hg.setName(sectionName)
     for item in items:
 	handstr, p = item
 	percent = int(p.rstrip("%"))
 	if (percent < 0) or (percent > 100):
 	    print "Bad percentage (%s)" % p
 	    continue
-	print " %d%% " % percent,
+	if options.verbose:
+		print " %d%% " % percent,
 	if handTypes.has_key(handstr):
 	    hg.addHands(handTypes[handstr], percent)
-	    print "%s hand generator" % handstr
+	    if options.verbose:
+		    print "%s hand generator" % handstr
 	else:
 	    hands = HoldEm.Hands()
 	    for s in handstr.split():
 		hands.addHandGroup(s)
 	    hg.addHands(hands, percent)
-	    print hands
+	    if options.verbose:
+		    print hands
 #	else:
 #	    print "Can't parse: %s = %s" % (attribute, value)
-    game.addHandGenerator(hg)
-    handNum += 1
+    predefined_hands.append(hg)
 
-if handNum == 0:
-    print "No hands read from %s. Quitting." % configFileName
-    sys.exit(0)
+if len(predefined_hands) == 0:
+	print "No hands read from %s. Quitting." % configFileName
+	sys.exit(0)
 
 if options.verbose:
-    print "Read %d hands" % handNum
+    print "Read %d hands" % len(predefined_hands)
 
+predefined_board = None
 try:
     boardStr = config.get("board", "cards")
 except:
     pass
 else:
-    board = Board.fromString(boardStr)
+    predefined_boardboard = Board.fromString(boardStr)
     if options.verbose:
 	print "Setting board: %s" % board
     game.setBoard(board)
@@ -167,7 +170,12 @@ else:
 if options.verbose:
     print "Running..."
 
-stats = game.simulateGames(options.numGames, callback=callback)
+simulator = HoldEm.Simulator(predefined_hands=predefined_hands,
+			     predefined_board=predefined_board)
 
-output_stats(game, stats)
+stats = simulator.simulate_games(number_of_games=options.numGames,
+				 callback=callback)
+
+output_stats(simulation=simulator,
+	     stats=stats)
 

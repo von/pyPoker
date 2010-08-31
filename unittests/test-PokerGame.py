@@ -3,11 +3,13 @@
 
 import unittest
 
+from pyPoker import HoldEm
 from pyPoker.Cards import Cards, Rank
 from pyPoker.Deck import Deck
+from pyPoker.Hand import Board
 from pyPoker.Hands import Hands
 from pyPoker.LowRanker import LowRanker
-from pyPoker.PokerGame import PokerGame, Result, Stats
+from pyPoker.PokerGame import Result, Simulator, Stats
 from pyPoker.PokerRank import PokerRank
 from pyPoker.Ranker import Ranker
 
@@ -16,25 +18,32 @@ class TestSequenceFunctions(unittest.TestCase):
     def setUp(self):
 	pass
 
-    def test_PokerGame(self):
-        """Test basic PokerGame construction"""
-        game = PokerGame()
-        self.assertIsNotNone(game)
+    def test_Simulator(self):
+        """Test basic Simulator construction"""
+        simulator = Simulator()
+        self.assertIsNotNone(simulator)
+        self.assertEqual(simulator.GAME_NAME, "Poker")
+        simulator = Simulator(number_of_hands=10)
+        self.assertIsNotNone(simulator)
+        deck = Deck()
+        hands = deck.createHands(9)
+        simulator = Simulator(predefined_hands=hands)
+        self.assertIsNotNone(simulator)
+        self.assertEqual(hands, simulator.get_predefined_hands())
 
-    def test_highHandWins(self):
-        """Test highHandWins() method"""
-        game = PokerGame()
-        self.assertTrue(game.highHandWins())
+    def test_simulate_game(self):
+        """Test Simulator.simulate_game()"""
+        simulator = Simulator()
+        result = simulator.simulate_game()
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, Result)
 
-    def test_lowHandWins(self):
-        """Test lowHandWins() method"""
-        game = PokerGame()
-        self.assertFalse(game.lowHandWins())
-
-
-    # Todo: Add some more PokerGame tests here
-    # Right now PokerGame is implicitly tested by its child classes
-    # (e.g. HoldEm.Game), but some explicit tests should be added.
+    def test_simulate_games(self):
+        """Test Simulator.simulate_games()"""
+        simulator = Simulator()
+        stats = simulator.simulate_games()
+        self.assertIsNotNone(stats)
+        self.assertIsInstance(stats, Stats)
 
     def test_Result(self):
         """Test basic construction and operation of Result instance"""

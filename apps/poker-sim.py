@@ -14,10 +14,10 @@ from pyPoker.Cards import Cards
 # Callback for displaying each hand
 #
 
-def showHandCallback(game, result):
+def showHandCallback(simulator, result):
     output_game(result)
 
-def showProgressCallback(game, result):
+def showProgressCallback(simulator, result):
     sys.stdout.write(".")
     sys.stdout.flush()
 
@@ -26,18 +26,18 @@ def showProgressCallback(game, result):
 #
 # Output routines
 
-def output_stats(game, stats):
-    hands = game.getHands()
+def output_stats(simulation, stats):
     high_winners = stats.get_high_winners()
     low_winners = stats.get_low_winners()
     scoops = stats.get_scoops()
     number_of_games = stats.get_number_of_games()
-    for index in range(game.getNumHands()):
+    predefined_hands = simulation.get_predefined_hands()
+    for index in range(stats.get_number_of_hands()):
         print "%2d:" % (index + 1),
-        if index >= len(hands):
-            print "XX " * game.getHandClass().getMaxCards(),
+        if index >= len(predefined_hands):
+            print "XX " * simulation.HandClass.getMaxCards(),
         else:
-            print "%s " % hands[index],
+            print "%s " % predefined_hands[index],
         if high_winners is not None:
             print "High wins %4d (%3.0f%%)" % (
                 high_winners[index],
@@ -101,21 +101,21 @@ def main(argv=None):
     (options, args) = parser.parse_args()
 
     game = {
-        "holdem" : HoldEm.Game,
-        "5cardstud" : FiveCardStud.Game,
-        "fivecardstud" : FiveCardStud.Game,
-        "5cardstudhilo" : FiveCardStud.HiLoGame,
-        "fivecardstudhilo" : FiveCardStud.HiLoGame,
-        "7cardstud" : SevenCardStud.Game,
-        "sevencardstud" : SevenCardStud.Game,
-        "7cardstudhilo" : SevenCardStud.HiLoGame,
-        "sevencardstudhilo" : SevenCardStud.HiLoGame,
-        "omaha" : Omaha.Game,
-        "omahahilo" : Omaha.HiLoGame,
+        "holdem" : HoldEm.Simulator,
+        "5cardstud" : FiveCardStud.Simulator,
+        "fivecardstud" : FiveCardStud.Simulator,
+        "5cardstudhilo" : FiveCardStud.HiLoSimulator,
+        "fivecardstudhilo" : FiveCardStud.HiLoSimulator,
+        "7cardstud" : SevenCardStud.Simulator,
+        "sevencardstud" : SevenCardStud.Simulator,
+        "7cardstudhilo" : SevenCardStud.HiLoSimulator,
+        "sevencardstudhilo" : SevenCardStud.HiLoSimulator,
+        "omaha" : Omaha.Simulator,
+        "omahahilo" : Omaha.HiLoSimulator,
         }
 
     if game.has_key(options.game):
-        GameClass = game[options.game]
+        SimulatorClass = game[options.game]
     else:
         print "Unknown game type \"%s\"" % options.game
         print "Known games are:"
@@ -123,42 +123,46 @@ def main(argv=None):
             print "\t%s" % name
         sys.exit(1)
 
-    maxHands = GameClass.getMaxHands()
+    maxHands = SimulatorClass.getMaxHands()
     if options.numHands > maxHands:
         options.numHands = maxHands
         if options.verbose:
             print "Reducing number of hands to %d" % maxHands
 
-    game = GameClass(numHands = options.numHands)
-    HandClass = GameClass.getHandClass()
+    HandClass = SimulatorClass.HandClass
 
+    hands = Hands()
     if options.hands is not None:
-        hands = Hands()
         for hand in options.hands:
             hands.addHand(HandClass.fromString(hand))
-        game.addHands(hands)
 
     if options.board:
-        game.setBoard(Board.fromString(options.board))
+        board = Board.fromString(options.board)
+    else:
+        board = None
 
     if options.verbose:
         callback=showHandCallback
 
         print "Simulating %d games of %s" % (options.numGames,
-					 GameClass.gameName)
-        print "%d Hands" % game.getNumHands(),
-        if game.hands:
-            print ": %s" % game.hands
+                                             SimulatorClass.GAME_NAME)
+        print "%d Hands" % options.numHands
+        if hands is not None:
+            print ": %s" % hands
         else:
             print
-        if game.board:
-            print "Board: %s" % game.board
+        if board is not None:
+            print "Board: %s" % board
     elif options.showProgress:
         callback=showProgressCallback
     else:
         callback=None
 
-    cmd="game.simulateGames(options.numGames, callback=callback)"
+    simulator = SimulatorClass(number_of_hands = options.numHands,
+                               predefined_hands = hands,
+                               predefined_board = board)
+
+    cmd="simulator.simulate_games(number_of_games=options.numGames, callback=callback)"
 
     if options.profile:
         import cProfile
@@ -173,7 +177,8 @@ def main(argv=None):
         print
 
     if not options.quiet:
-        output_stats(game, stats)
+        output_stats(simulation=simulator,
+                     stats=stats)
 
 if __name__ == "__main__":
     sys.exit(main())

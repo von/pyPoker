@@ -23,122 +23,90 @@ class TooManyHandsException(PokerException):
     """Too many hands defined (not enough cards)."""
     pass
 
+class InvalidBoardException(PokerException):
+    """Board is invalid."""
+    pass
+
 ######################################################################
-#
-# PokerGame
-#
 
-class PokerGame:
-    # Type of hand used in this game, should be redefined in subclasses
-    handClass = Hand
+class Simulator(object):
+    """Simulate a poker game (no betting)"""
 
-    # Type of Deck used in this game
-    deckClass = Deck
+    # Class to use for Hands
+    HandClass=Hand
+    
+    # Class to use for ranking high hands
+    # Or None if high hand doesn't win
+    HighRankerClass=Ranker
 
-    # Name of this game
-    gameName = "Poker"
+    # Class to use for rnaking low hands
+    # Or None if low hand doesn't win
+    LowRankerClass=None
 
-    # Support for board here, but don't allow setting in this class
-    board = None
+    # String descrition of this game
+    GAME_NAME="Poker"
 
-    # Class to use to determine rank for hi and/or low
-    # If == None then no winner in that direction.
-    highHandRankerClass = Ranker
-    lowHandRankerClass = None
+    def __init__(self,
+                 number_of_hands=9,
+                 predefined_hands=None,
+                 predefined_board=None):
+        """Initialize simulation.
 
-    # Ranker instances to use to determine hand ranks
-    highHandRanker = None
-    lowHandRanker = None
+        number_of_hands is number of hands total to simulate.
 
-    # Low hand must be eight or berrer?
-    lowHandEightOrBetter = False
+        predefined_hands should be a Hands instances and can containe
+        either Hand or HandGenerator instances. For a latter a new
+        hand will be generated for each simulation.
 
-    def __init__(self, numHands = 0, hands=None):
-	assertInstance(numHands, int)
-	self.deck = self.deckClass()
-	if numHands and (numHands > self.getMaxHands()):
-	    raise TooManyHandsException
-	self.numHands = numHands
-	self.hands = Hands()
-	self.lowHandsWin = (self.lowHandRankerClass != None)
-        if self.lowHandRankerClass:
-            self.lowHandRanker = self.lowHandRankerClass()
-	self.highHandsWin = (self.highHandRankerClass != None)
-        if self.highHandRankerClass:
-            self.highHandRanker = self.highHandRankerClass()
-	if hands:
-	    self.addHands(hands)
+        predefined_board should be a predefined set of community cards.
+        Setting this for a HandClass that doesn't support a board will
+        raise an error.
+        """
+        # Todo: add argument sanity checking
+        if number_of_hands > self.getMaxHands():
+            raise TooManyHandsException("Only %d hands allowed"
+                                        % self.getMaxHands())
+        self.number_of_hands = number_of_hands
+
+        self.predefined_hands = predefined_hands
+        if self.HighRankerClass is not None:
+            self.high_ranker = self.HighRankerClass()
+        else:
+            self.high_ranker = None
+        if self.LowRankerClass is not None:
+            self.low_ranker = self.LowRankerClass()
+        else:
+            self.low_ranker = None
+        self.board = None
+        if issubclass(self.HandClass, CommunityCardHand):
+            if predefined_board is None:
+                BoardClass = self.HandClass.boardClass
+                self.board = BoardClass()
+            else:
+                # Todo: verify board is of appropriate class
+                self.board = predefined_board
+        elif predefined_board is not None:
+            raise InvalidBoardException("Given HandClass does not support a Board")
+        self.deck = Deck()
         
     @classmethod
-    def getHandClass(cls):
-	return cls.handClass
-
-    @classmethod
-    def highHandWins(cls):
-        return cls.highHandRankerClass is not None
-
-    @classmethod
-    def lowHandWins(cls):
-        return cls.lowHandRankerClass is not None
-
-    def addHands(self, hands):
-	if hands is None:
-	    return
-	if isinstance(hands, Hand) or isinstance(hands, HandGenerator):
-	    hands = [ hands ]
-	if len(self.hands) + len(hands) > self.getMaxHands():
-	    raise TooManyHandsException
-	for hand in hands:
-	    if hand is None:
-		self.hands.addHand(self.handClass())
-	    else:
-		self.hands.addHand(hand)
-		self.deck.removeCards(hand)
-				     
-    def addHand(self, hand):
-	assertInstance(hand, Hand)
-	self.addHands(hand)
-
-    def addHandGenerator(self, hg):
-	assertInstance(hg, HandGenerator)
-	self.hands.addHand(hg)
-
-    @classmethod
     def getMaxHands(cls):
-	cardsPerHand = cls.handClass.maxCards
-	if cls.hasBoard():
-	    boardCards = cls.handClass.boardClass.maxCards
-	else:
-	    boardCards = 0
-	numCards = cls.deckClass.numCards - boardCards
-	return int(numCards/cardsPerHand)
-	
-    def getNumHands(self):
-	return max(self.numHands, len(self.hands))
+        """Return the maximum number of hands that can be dealt"""
+	cards_per_hand = cls.HandClass.maxCards
+        cards_in_deck = 52
+        if issubclass(cls.HandClass, CommunityCardHand):
+            cards_in_deck -= cls.HandClass.boardClass.maxCards
+	return int(cards_in_deck/cards_per_hand)
 
-    def getHands(self):
-	return self.hands
+    def get_predefined_hands(self):
+        """Return array of predefined hands or None if none predefined."""
+        return self.predefined_hands
 
-    @classmethod
-    def hasBoard(cls):
-	return (cls.handClass.boardClass != None)
-
-    def setBoard(self, board):
-	if not self.hasBoard():
-	    raise HandHasNoBoardException()
-	if board:
-	    assertInstance(board, Cards)
-	    self.deck.removeCards(board)
-	self.board = board
-
-    def getBoard(self):
-	if not self.hasBoard():
-	    raise HandHasNoBoardException()
-	return self.board
-
-    def simulateGames(self, numGames = 100, callback=None, callbackArg=None,
-		      stats=None):
-	"""Simulate a bunch of games with starting hands. Returns
+    def simulate_games(self,
+                       number_of_games = 100,
+                       callback=None, callbackArg=None,
+                       stats=None):
+        """Simulate a bunch of games with starting hands. Returns
 	a array with number of wins for each hand.
 
         Returns a Stats instance with the statistics from the games. If a
@@ -148,35 +116,36 @@ class PokerGame:
         callback should be a function that takes the form:
         callback(game, result, *callbackarg)
         """
-	assertInstance(numGames, int)
-	if self.getNumHands() == 0:
-	    raise PokerGameStateException("Zero hands defined.")
+        assertInstance(number_of_games, int)
         if stats is None:
-            stats = Stats(number_of_hands = self.getNumHands())
-	while numGames > 0:
-	    result = self.simulateGame()
+            stats = Stats(number_of_hands = self.number_of_hands)
+	while number_of_games > 0:
+	    result = self.simulate_game()
             stats.record_game(result)
 	    if callback is not None:
                 args = [self, result]
                 if callbackArg is not None:
                     args.append(callbackArg)
                 callback(*args)
-            numGames -= 1
+            number_of_games -= 1
         return stats
 
-    def simulateGame(self):
+    def simulate_game(self):
 	# Make a copy of deck, hands and board
 	deck = self.deck.copy()
 	deck.shuffle()
 	hands = Hands()
-	for hand in self.hands:
-	    if isinstance(hand, HandGenerator):
-		hands.addHand(hand.generateHand(deck = deck))
-	    else:
-		hands.addHand(hand.copy())
+        # Deal out predefined hands
+        if self.predefined_hands is not None:
+            for hand in self.predefined_hands:
+                if isinstance(hand, HandGenerator):
+                    hands.addHand(hand.generateHand(deck = deck))
+                else:
+                    hands.addHand(hand.copy())
+                    deck.removeCards(hand)
 	# If we have less than numHands, fill it out
-	while len(hands) < self.numHands:
-	    hands.addHand(self.handClass())
+	while len(hands) < self.number_of_hands:
+	    hands.addHand(self.HandClass())
 	if self.board is None:
 	    board = None
 	else:
@@ -190,25 +159,15 @@ class PokerGame:
 		hand.setBoard(board)
         result = Result(hands, board=board)
 	# Find winning hands
-	if self.highHandsWin:
-	    (high_winners, bestHighRank) = self.highHandRanker.bestHand(hands)
+	if self.high_ranker is not None:
+	    (high_winners, bestHighRank) = self.high_ranker.bestHand(hands)
             result.high_winners = high_winners
             result.winning_high_rank = bestHighRank
-	if self.lowHandsWin is True:
-	    (low_winners, bestLowRank) = self.lowHandRanker.bestHand(hands)
+	if self.low_ranker is not None:
+	    (low_winners, bestLowRank) = self.low_ranker.bestHand(hands)
             result.low_winners = low_winners
             result.winning_low_rank = bestLowRank
         return result
-
-class CommunityCardPokerGame(PokerGame):
-    handClass = CommunityCardHand
-    gameName = "Community Card Poker"
-
-    def __init__(self, numHands = 0, hands=None, board=None):
-	PokerGame.__init__(self, numHands=numHands, hands=None)
-	if board is None:
-	    board = self.handClass.boardClass()
-	self.setBoard(board)
 
 class Result(object):
     """Result from a hand of poker."""
@@ -282,6 +241,10 @@ class Stats(object):
     def get_number_of_games(self):
         """Return number of games recorded"""
         return self.number_of_games
+
+    def get_number_of_hands(self):
+        """Return number of hand in recorded games"""
+        return self.number_of_hands
 
     def get_high_winners(self):
         """Return an array with number of high wins by each hand"""
