@@ -14,8 +14,55 @@ from pyPoker.Hand import Board
 # Callback for displaying each hand
 #
 
-def showHandCallback(game):
-	print game.lastGameToString()
+def showHandCallback(game, result):
+	output_game(result)
+
+######################################################################
+#
+# Output routines
+
+def output_stats(game, stats):
+    hands = game.getHands()
+    high_winners = stats.get_high_winners()
+    low_winners = stats.get_low_winners()
+    scoops = stats.get_scoops()
+    number_of_games = stats.get_number_of_games()
+    for index in range(game.getNumHands()):
+        print "%2d:" % (index + 1),
+        if index >= len(hands):
+            print "XX " * game.getHandClass().getMaxCards(),
+        else:
+            print "%s " % hands[index],
+        if high_winners is not None:
+            print "High wins %4d (%3.0f%%)" % (
+                high_winners[index],
+                100.0 * high_winners[index] / number_of_games),
+        if low_winners is not None:
+            print " Low wins %4d (%3.0f%%)" % (
+                low_winners[index],
+                100.0 * low_winners[index] / number_of_games),
+        if (low_winners is not None) and (high_winners is not None):
+            print " Scoops: %d" % scoops[index],
+        print
+
+def output_game(result):
+	if result.board is not None:
+	    print "Board: %s " % result.board,
+	if result.high_winners is not None:
+	    print "High: %s " % result.winning_high_rank,
+            print "(%s) " % (",".join(["%d:%s" % (hand + 1, result.hands[hand])
+                                      for hand in result.high_winners])),
+	if result.low_winners is not None:
+	    s += "Low: %s " % result.winning_low_rank,
+            print "(%s) " % (",".join(["%d:%s" % (hand + 1, result.hands[hand])
+                                      for hand in result.low_winners])),
+	if (result.high_winners is not None) and \
+                (result.low_winners is not None):
+            scoopers = filter(lambda i: i in result.low_winners,
+                              result.high_winners)
+            if len(scoopers) == 1:
+		print "(Hand %d scoops)" % (scoopers[0]),
+        print
 
 ######################################################################
 
@@ -120,7 +167,7 @@ else:
 if options.verbose:
     print "Running..."
 
-game.simulateGames(options.numGames, callback=callback)
+stats = game.simulateGames(options.numGames, callback=callback)
 
-print game.statsToString()
+output_stats(game, stats)
 

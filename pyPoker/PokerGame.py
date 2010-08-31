@@ -53,39 +53,6 @@ class PokerGame:
     # Low hand must be eight or berrer?
     lowHandEightOrBetter = False
 
-    # For each hand, number of wins high
-    highWins = []
-
-    # For each hand, number of wins low
-    lowWins = []
-
-    # For each hand, number of scoops (wins both ways)
-    scoops = []
-
-    # What game number are we playing
-    gameNum = 0
-
-    # Hands from last game simulated
-    lastGameHands = None
-
-    # Board from last game simulated
-    lastGameBoard = None
-
-    # High winners for last game simulated
-    lastGameHighWinners = None
-
-    # High rank for last game simulated
-    lastGameHighRank = None
-
-    # Low winners for last game simulated
-    lastGameLowWinners = None
-
-    # Low rank for last game simulated
-    lastGameLowRank = None
-
-    # Scoopers for last game simulated
-    lastGameScoopers = None
-
     def __init__(self, numHands = 0, hands=None):
 	assertInstance(numHands, int)
 	self.deck = self.deckClass()
@@ -99,35 +66,20 @@ class PokerGame:
 	self.highHandsWin = (self.highHandRankerClass != None)
         if self.highHandRankerClass:
             self.highHandRanker = self.highHandRankerClass()
-	self.highWins = []
-	self.lowWins = []
-	self.scoops = []
 	if hands:
 	    self.addHands(hands)
-
-    def resetStats(self):
-	numHands  =  max(len(self.hands), self.numHands)
-	if self.highHandsWin:
-	    self.highWins = [ 0 ] * numHands
-	if self.lowHandsWin:
-	    self.lowWins = [ 0 ] * numHands
-	if self.lowHandsWin and self.highHandsWin:
-	    self.scoops = [ 0 ] * numHands
-	self.gameNum = 0
-
-    def __checkStatArrays(self):
-	"""Make sure all the statistic arrays are long enough.
-	In case a hand was added since we last simualted a game."""
-	if len(self.highWins) < len(self.hands):
-	    self.highWins.extend([ 0 ] * (len(self.hands)-len(self.highWins)))
-	if len(self.lowWins) < len(self.hands):
-	    self.lowWins.extend([ 0 ] * (len(self.hands)-len(self.lowWins)))
-	if len(self.scoops) < len(self.hands):
-	    self.scoops.extend([ 0 ] * (len(self.hands)-len(self.scoops)))
-
+        
     @classmethod
     def getHandClass(cls):
 	return cls.handClass
+
+    @classmethod
+    def highHandWins(cls):
+        return cls.highHandRankerClass is not None
+
+    @classmethod
+    def lowHandWins(cls):
+        return cls.lowHandRankerClass is not None
 
     def addHands(self, hands):
 	if hands is None:
@@ -184,55 +136,35 @@ class PokerGame:
 	    raise HandHasNoBoardException()
 	return self.board
 
-    def getHighWins(self):
-	"""Return an array with how many times each hand won high."""
-	if not self.highHandsWin:
-	    return None
-	return self.highWins
-
-    def getLowWins(self):
-	"""Return an array with how many times each hand won low."""
-	if not self.lowHandsWin:
-	    return None
-	return self.lowWins
-
-    def getWins(self):
-	"""Return total wins by each hand (high or low)."""
-	if not self.lowHandsWin:
-	    return self.highWins
-	if not self.highHandsWin:
-	    return self.lowWins
-	wins = []
-	for hand in self.highWins:
-	    wins = self.highWins[hand] + self.lowWins[hand]
-	return wins
-
-    def getScoops(self):
-	"""Return an array with how many times each hand won both ways."""
-	if not (self.highHandsWin and self.lowHandsWin):
-	    return None
-	return self.scoops
-
     def simulateGames(self, numGames = 100, callback=None, callbackArg=None,
-		      resetStats = True):
+		      stats=None):
 	"""Simulate a bunch of games with starting hands. Returns
-	a array with number of wins for each hand."""
+	a array with number of wins for each hand.
+
+        Returns a Stats instance with the statistics from the games. If a
+        stats instance is passed in, the same one, augmented, will be
+        returned.
+
+        callback should be a function that takes the form:
+        callback(game, result, *callbackarg)
+        """
 	assertInstance(numGames, int)
 	if self.getNumHands() == 0:
 	    raise PokerGameStateException("Zero hands defined.")
-	if resetStats:
-	    self.resetStats()
-	while self.gameNum < numGames:
-	    self.simulateGame()
+        if stats is None:
+            stats = Stats(number_of_hands = self.getNumHands())
+	while numGames > 0:
+	    result = self.simulateGame()
+            stats.record_game(result)
 	    if callback is not None:
-		if callbackArg:
-		    callback(self, callbackArg)
-		else:
-		    callback(self)
+                args = [self, result]
+                if callbackArg is not None:
+                    args.append(callbackArg)
+                callback(*args)
+            numGames -= 1
+        return stats
 
     def simulateGame(self):
-	self.__checkStatArrays()
-	self.gameNum += 1
 	# Make a copy of deck, hands and board
 	deck = self.deck.copy()
 	deck.shuffle()
@@ -256,117 +188,17 @@ class PokerGame:
 	    deck.dealHands(board)
 	    for hand in hands:
 		hand.setBoard(board)
-	    self.lastGameBoard = board
-	self.lastGameHands = hands
+        result = Result(hands, board=board)
 	# Find winning hands
 	if self.highHandsWin:
-	    (bestHighRank, highWinners) = self._findHighHands(hands, board)
-	    self.lastGameHighWinners = highWinners
-	    self.lastGameHighRank = bestHighRank
-	    for winner in highWinners:
-		self.highWins[winner] += 1
+	    (high_winners, bestHighRank) = self.highHandRanker.bestHand(hands)
+            result.high_winners = high_winners
+            result.winning_high_rank = bestHighRank
 	if self.lowHandsWin is True:
-	    (bestLowRank, lowWinners) = self._findLowHands(hands, board)
-	    self.lastGameLowWinners = lowWinners
-	    self.lastGameLowRank = bestLowRank
-	    for winner in lowWinners:
-		self.lowWins[winner] += 1
-	if self.lowHandsWin and self.highHandsWin:
-	    self.lastGameScooper = self._findScooper(lowWinners, highWinners)
-	    if self.lastGameScooper is not None:
-		self.scoops[self.lastGameScooper] += 1
-
-    def _findHighHands(self, hands, board):
-	highWinners = [ 0 ]
-	bestHighRank = self.highHandRanker.rankHand(hands[0])
-	for index in range(1,len(hands)):
-	    rank = self.highHandRanker.rankHand(hands[index])
-	    if rank == bestHighRank:
-		highWinners.append(index)
-	    elif rank > bestHighRank:
-		highWinners = [index]
-		bestHighRank = rank
-	return (bestHighRank, highWinners)
-
-    def _findLowHands(self, hands, board):
-	if self.lowHandEightOrBetter and (board is not None):
-	    # See if low is possible given board
-	    if board.eightLowPossible() is False:
-		# Nope, don't bother checking for low hands
-		return (None, [])
-	bestLowRank = None
-	lowWinners = []
-	for index in range(len(hands)):
-	    hand = hands[index]
-	    if (self.lowHandEightOrBetter and
-		(hand.eightLowPossible() is False)):
-		# Hand cannot qualify for low, don't bother checking
-		continue
-	    rank = self.lowHandRanker.rankHand(hand)
-            if rank is None:
-                continue
-	    if ((bestLowRank is None) or
-		(rank < bestLowRank)):
-		lowWinners = [index]
-		bestLowRank = rank
-	    elif rank == bestLowRank:
-		lowWinners.append(index)
-	return (bestLowRank, lowWinners)
-
-    def _findScooper(self, lowWinners, highWinners):
-	"""Was there one winner of the whole pot?"""
-	if ((len(lowWinners) == 1) and
-	    (len(highWinners) == 1) and
-	    (lowWinners[0] == highWinners[0])):
-	    return lowWinners[0];
-	return None
-
-    def lastGameToString(self):
-	import string
-	s=""
-	if self.hasBoard():
-	    s += "Board: " + str(self.lastGameBoard) + " "
-	if self.highHandsWin:
-	    s += "High: %s " % self.lastGameHighRank
-	    s += "("
-	    s += ",".join(["%d:%s" % (hand + 1, self.lastGameHands[hand])
-			   for hand in self.lastGameHighWinners])
-	    s += ") "
-	if self.lowHandsWin and len(self.lastGameLowWinners):
-	    s += "Low: %s " % self.lastGameLowRank
-	    s += "("
-	    s += ",".join(["%d:%s" % (hand + 1, self.lastGameHands[hand])
-			   for hand in self.lastGameLowWinners])
-	    s += ") "
-	if self.lowHandsWin and self.highHandsWin:
-	    if self.lastGameScooper is not None:
-		s += "(Hand %d scoops)" % (self.lastGameScooper + 1)
-	s.strip()
-	return s
-
-    def statsToString(self):
-	s = ""
-	for hand in range(self.getNumHands()):
-	    s += "%2d:" % (hand + 1)
-	    if hand >= len(self.hands):
-		handStr = "XX " * self.handClass.getMaxCards()
-		s += handStr
-	    else:
-		s += str(self.hands[hand]) + " "
-	    if self.highHandsWin:
-		wins = self.highWins[hand]
-		s += "High wins %4d (%3.0f%%)" % (
-		    wins,
-		    100.0 * wins / self.gameNum)
-	    if self.lowHandsWin:
-		wins = self.lowWins[hand]
-		s += " Low wins %4d (%3.0f%%)" % (
-		    wins,
-		    100.0 * wins / self.gameNum)
-	    if self.highHandsWin and self.lowHandsWin:
-		s += " Scoops: %d" % self.scoops[hand]
-	    s += "\n"
-	return s
+	    (low_winners, bestLowRank) = self.lowHandRanker.bestHand(hands)
+            result.low_winners = low_winners
+            result.winning_low_rank = bestLowRank
+        return result
 
 class CommunityCardPokerGame(PokerGame):
     handClass = CommunityCardHand
@@ -378,3 +210,92 @@ class CommunityCardPokerGame(PokerGame):
 	    board = self.handClass.boardClass()
 	self.setBoard(board)
 
+class Result(object):
+    """Result from a hand of poker."""
+    def __init__(self, hands, board=None,
+                 high_winners=None, winning_high_rank=None,
+                 low_winners=None, winning_low_rank=None):
+        """Generate a Result object
+
+        high_winners should be an array of indexes of winning high hands.
+        winning_high_rank should be a Rank object representing the winning high rank.
+        low_winners should be an array of indexes of winning low hands.
+        winning_low_rank should be a Rank object representing the winning low rank.
+        
+        board should be a board, if used in game.
+
+        hands should be a Hands instance with hands from game.
+
+        Values can all be accessed directly."""
+        self.high_winners = high_winners
+        self.winning_high_rank = winning_high_rank
+        self.low_winners = low_winners
+        self.winning_low_rank = winning_low_rank
+        self.board = board
+        self.hands = hands
+                 
+class Stats(object):
+    """Object from holding stats from a series of poker games."""
+
+    def __init__(self, number_of_hands=9):
+        self.number_of_hands = number_of_hands
+        self.reset()
+
+    def reset(self):
+        """Reset statistics"""
+        # For each hand, number of wins high
+        self.high_winners = [0] * self.number_of_hands
+        # For each hand, number of wins low
+        self.low_winners = [0] * self.number_of_hands
+        # For each hand, number of scoops (wins both ways)
+        self.scoops = [0] * self.number_of_hands
+        # How many games have we recorded?
+        self.number_of_games = 0
+
+    def record_game(self, results):
+        """Record the winners of a game
+
+        results should be a Results instance."""
+        self.number_of_games += 1
+        if results.high_winners is not None:
+            for winner in results.high_winners:
+                if winner >= len(self.high_winners):
+                    raise IndexError(\
+                        "High winner #%d larger than number of hands (%d)" %
+                        (winner, self.number_of_hands))
+                self.high_winners[winner] += 1
+        if results.low_winners is not None:
+            for winner in results.low_winners:
+                if winner >= len(self.low_winners):
+                    raise IndexError(\
+                        "Low winner #%d larger than number of hands (%d)" %
+                        (winner, self.number_of_hands))
+                self.low_winners[winner] += 1
+        # If we have one winner who won both high and low, we have a scooper
+        if (results.low_winners is not None) and \
+                (len(results.low_winners) == 1) and \
+                (results.high_winners is not None) and \
+                (len(results.high_winners) == 1) and \
+                (results.low_winners[0] == results.high_winners[0]):
+            self.scoops[results.low_winners[0]] += 1
+
+    def get_number_of_games(self):
+        """Return number of games recorded"""
+        return self.number_of_games
+
+    def get_high_winners(self):
+        """Return an array with number of high wins by each hand"""
+        return self.high_winners
+
+    def get_low_winners(self):
+        """Return an array with number of low wins by each hand"""
+        return self.low_winners
+
+    def get_scoops(self):
+        """Return an array with number of scoops by each hand"""
+        return self.scoops
+
+
+                
+        
+            
