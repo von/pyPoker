@@ -1,5 +1,8 @@
 """Class for simulating poker games."""
 
+import copy
+import itertools
+
 from PokerException import PokerException
 from Hand import Hand, CommunityCardHand
 from Hands import Hands
@@ -261,7 +264,124 @@ class Stats(object):
     def get_scoops(self):
         """Return an array with number of scoops by each hand"""
         return self.scoops
-            
+
+######################################################################
+
+class Pot(object):
+    """A pot (main or side) with list of contending players
+
+    This implements a linked list of Pots, the first being the main
+    pot and then a series of side pots with the last being the pot
+    currently being bet into."""
+
+    def __init__(self, contending_players, amount=0,
+                 parent=None, message_handler=None):
+        # Todo: Sanity check arguments
+        if len(contending_players) < 1:
+            raise ValueError("contending_players empty")
+        self.contending_players = copy.copy(contending_players)
+        self.folded_players = []
+        self.parent = parent
+        self.amount = amount
+        self.message_handler = message_handler
+        self._message("New " + str(self))
+
+    def fold_player(self, player):
+        """Fold a player, removing them from contention of this pot and any parent pots"""
+        if player not in self.contending_players:
+            raise ValueError("Attempt to fold player not contending for pot")
+        self.contending_players.remove(player)
+        self.folded_players.append(player)
+        if self.parent: self.parent.fold_player(player)
+        self._debug("Folding " + str(player))
+
+    def pull_bets(self, maximum_pull=None):
+        """Pull bets from all players who were or are in pot.
+
+        If maximum_pull is not None, only pull up to max chips."""
+        if maximum_pull is None:
+            self._debug("Pulling bets (no maximum)")
+        else:
+            self._debug("Pulling bets (%d maximum)" % maximum_pull)
+        for player in itertools.chain(self.contending_players,
+                                      self.folded_players):
+            if maximum_pull is not None:
+                pull = min(maximum_pull, player.bet)
+            else:
+                pull = player.bet
+            player.bet -= pull
+            self.amount += pull
+
+    def new_side_pot(self, contending_players=None):
+        """Create a new side pot. This pot is saved as parent.
+
+        contending_players should be an array of players who will be
+        the contending players in the new side pot. If None, all contending
+        players with a bet greater than 0 will be contenders."""
+        if contending_players is None:
+            contending_players = filter(lambda p: p.bet > 0,
+                                        self.contending_players)
+        # Todo: contending_players must be subset of self.contending_players
+        new_parent = Pot(contending_players=contending_players,
+                         amount=self.amount,
+                         parent=self.parent)
+        self.contending_players = contending_players
+        self.parent = new_parent
+        self.amount = 0
+
+    def distribute(self, high_winners=None, low_winners=None):
+        """Distribute pot among winning players."""
+        # First split pot into halves if needed
+        high = (high_winners is not None) and (len(high_winners) > 0)
+        low = (low_winners is not None) and (len(low_winners) > 0)
+        if not(high or low):
+            raise ValueError("No winners given")
+        if high and low:
+            # XXX Need to deal with chip size and fraction going to high
+            high_portion = self.amount/2
+            low_portion = self.amount/2
+        elif high:
+            high_portion = self.amount
+            low_portion = 0
+        else:
+            low_portion = self.amount
+            high_portion = 0
+        # Ok, now distribute
+        if high_portion > 0:
+            # XXX Need to deal with chip size and fraction going to
+            #     worst position
+            share = high_portion / len(high_winners)
+            for player in high_winners:
+                player.win(share)
+        if low_portion > 0:
+            # XXX Need to deal with chip size and fraction going to
+            #     worst position
+            share = low_portion / len(low_winners)
+            for player in low_winners:
+                player.win(share)
+        self.amount = 0
+
+    def __str__(self):
+        if self.parent is None:
+            s = "Main pot"
+        else:
+            s = "Side pot"
+        s += " %d" % self.amount
+        s += " (contenders: " + \
+            ",".join([str(player) for player in self.contending_players]) + \
+            ")"
+        return s
+
+    def _message(self, msg):
+        """Handle a message"""
+        if self.message_handler:
+            self.message_handler.message(msg)
+
+    def _debug(self, msg):
+        """Handle a debug message"""
+        if self.message_handler:
+            self.message_handler.debug(msg)
+
 ######################################################################
 
 class Action(object):

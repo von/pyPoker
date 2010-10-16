@@ -10,10 +10,10 @@ from pyPoker.Deck import Deck
 from pyPoker.Hand import Board
 from pyPoker.Hands import Hands
 from pyPoker.LowRanker import LowRanker
-from pyPoker.Player import Table
+from pyPoker.Player import Player, Table
 from pyPoker.PokerGame import \
     Action, InvalidActionException, \
-    MessageHandler, Result, Simulator, Stats
+    MessageHandler, Pot, Result, Simulator, Stats
 from pyPoker.PokerRank import PokerRank
 from pyPoker.Ranker import Ranker
 
@@ -221,6 +221,112 @@ class TestSequenceFunctions(unittest.TestCase):
         s2 = "Hello again"
         handler.debug(s2)
         self.assertEqual(buffer.getvalue(), s + "\n" + "DEBUG: " + s2 + "\n")
+
+    def test_Pot(self):
+        """Test Pot class"""
+        player_one = Player(name="One")
+        player_two = Player(name="Two")
+        player_three = Player(name="Three")
+        player_four = Player(name="Four")
+        contending_players = [player_one, player_two, player_three, player_four]
+        pot = Pot(contending_players)
+        self.assertIsNotNone(pot)
+        self.assertEqual(pot.amount, 0)  # Default amount
+        self.assertIsNone(pot.parent)
+        self.assertListEqual(pot.contending_players, contending_players)
+        pot.fold_player(player_one)
+        contending_players.remove(player_one)
+        self.assertListEqual(pot.contending_players, contending_players)
+        self.assertIn(player_one, pot.folded_players)
+        pot.amount += 100
+        s = str(pot)
+        self.assertIsInstance(s, str)
+        self.assertEqual(s, "Main pot 100 (contenders: Two,Three,Four)")
+        contending_players.remove(player_three)
+        pot.new_side_pot(contending_players)
+        self.assertListEqual(pot.contending_players, contending_players)  
+        self.assertEqual(pot.amount, 0)      
+        self.assertIsNotNone(pot.parent)
+        self.assertEqual(pot.parent.amount, 100)
+        # Should remove from both pot and pot.parent
+        pot.fold_player(player_four)
+        self.assertListEqual(pot.contending_players, [player_two])
+        self.assertNotIn(player_four, pot.parent.contending_players)
+        self.assertIn(player_four, pot.parent.folded_players)
+        s = str(pot)
+        self.assertIsInstance(s, str)
+        self.assertEqual(s, "Side pot 0 (contenders: Two)")
+
+    def test_Pot_new_side_pot(self):
+        """Test Pot.new_side_pot() method"""
+        player_one = Player(name="One")
+        player_two = Player(name="Two")
+        player_three = Player(name="Three")
+        player_four = Player(name="Four")
+        contending_players = [player_one, player_two, player_three, player_four]
+        pot = Pot(contending_players)
+        player_one.bet = 100
+        player_two.bet = 0
+        player_three.bet = 120
+        player_four.bet = 90
+        pot.new_side_pot()
+        # Should have dropped player_two since .bet == 0
+        self.assertListEqual(pot.contending_players,
+                             [player_one, player_three, player_four])
+
+    def test_Pot_pull_bets(self):
+        """Test Pot.pull_bets() method"""
+        player_one = Player(name="One")
+        player_two = Player(name="Two")
+        player_three = Player(name="Three")
+        player_four = Player(name="Four")
+        contending_players = [player_one, player_two, player_three, player_four]
+        pot = Pot(contending_players)
+        player_one.bet = 100
+        player_two.bet = 10
+        player_three.bet = 120
+        player_four.bet = 90
+        pot.pull_bets(maximum_pull=50)
+        self.assertEqual(pot.amount, 160)
+        self.assertEqual(player_one.bet, 50)
+        self.assertEqual(player_two.bet, 0)
+        self.assertEqual(player_three.bet, 70)
+        self.assertEqual(player_four.bet, 40)
+        pot.fold_player(player_one)  # Should still pull from this player
+        pot.pull_bets()  # Should pull everything
+        self.assertEqual(pot.amount, 320)
+        for player in contending_players:
+            self.assertEqual(player.bet, 0,
+                             "%s bet == %d != 0" % (player, player.bet))
+
+    def test_Pot_distribute(self):
+        """Test Pot.distribute() method"""
+        player_one = Player(name="One")
+        player_two = Player(name="Two")
+        player_three = Player(name="Three")
+        player_four = Player(name="Four")
+        contending_players = [player_one, player_two, player_three, player_four]
+        pot = Pot(contending_players)
+        pot.amount = 200
+        pot.distribute(high_winners = [player_two])
+        self.assertEqual(pot.amount, 0)
+        self.assertEqual(player_two.stack, 200)
+        for player in contending_players:
+            player.stack = 0
+        pot.amount = 200
+        pot.distribute(high_winners = [player_one], low_winners = [player_four])
+        self.assertEqual(pot.amount, 0)
+        self.assertEqual(player_one.stack, 100)
+        self.assertEqual(player_four.stack, 100)
+        for player in contending_players:
+            player.stack = 0
+        pot.amount = 200
+        pot.distribute(high_winners = [player_one, player_two],
+                       low_winners = [player_three])
+        self.assertEqual(pot.amount, 0)
+        self.assertEqual(player_one.stack, 50)
+        self.assertEqual(player_two.stack, 50)
+        self.assertEqual(player_three.stack, 100)
 
 if __name__ == "__main__":
     unittest.main()
