@@ -818,3 +818,80 @@ class BettingRound(object):
         if self.message_handler is not None:
             self.message_handler.debug(msg)
 
+######################################################################
+class Structure(object):
+    """Structure for a poker game.
+
+    This is a set of read-only state regarding betting structure, namely
+    limit, pot limit or no-limit, ante amount, blinds and minimum bet
+    sizes for each round."""
+
+    LIMIT = 0x00
+    POT_LIMIT = 0x01
+    NO_LIMIT = 0x02
+
+    def __init__(self,
+                 type,
+                 ante,
+                 blinds,
+                 bet_sizes=None):
+        """Create a betting structure for the game.
+
+        type should one of TYPE_LIMT, TYPE_POT_LIMIT, TYPE_NO_LIMIT.
+
+        ante should be the size of the ante each player pays per round.
+
+        blind should be an array of blinds, from small to large.
+
+        bet_sizes should be an array of the bet size for each round of betting.
+        Or None if minimum bet is set by the big blind.
+        """
+        # TODO: Sanity check arguments
+        self.type = type
+        self.ante = ante
+        self.blinds = blinds
+        if bet_sizes is None:
+            bet_sizes = max(blinds)
+        self.bet_sizes = bet_sizes
+
+    def is_limit(self):
+        """Return True if this is a limit structure"""
+        return self.type == self.LIMIT
+
+    def is_pot_limit(self):
+        """Return True if this is a pot limit structure"""
+        return self.type == self.POT_LIMIT
+
+    def is_no_limit(self):
+        """Return True if this is a no limit structure"""
+        return self.type == self.NO_LIMIT
+
+    def get_ante(self):
+        """Return the amount of the ante"""
+        return self.ante
+
+    def get_blinds(self):
+        """Return an array of blinds from smallest to largest.
+
+        Returns None if there are no blinds."""
+        return self.blinds
+
+    def get_minimum_bet(self, betting_round):
+        """Return the minimum bet for the given betting round"""
+        if isinstance(self.bet_sizes, list):
+            return self.bet_sizes[betting_round]
+        else:
+            # One minimum for all rounds
+            return self.bet_sizes
+
+    def validate_bet(self, action, game_state):
+        """Make sure bet represented by given action is legal.
+
+        Raises InvalidAtionException if not legal."""
+        # XXX This is assuming limit.
+        # XXX This is ignoring a double bet allowed if pair showing
+        bet_size = self.bet_sizes[game_state.betting_round]
+        if action.amount != bet_size:
+            raise InvalidActionException("Invalid bet size: %d != %d" % \
+                                             (action.amount, bet_size))
+

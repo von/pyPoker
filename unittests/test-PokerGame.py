@@ -14,7 +14,7 @@ from pyPoker.Player import Player, Table
 from pyPoker.PokerGame import \
     Action, InvalidActionException, \
     BettingRound, HandState, \
-    MessageHandler, Pot, Result, Simulator, Stats, \
+    MessageHandler, Pot, Result, Simulator, Stats, Structure, \
     PokerGameStateException
 from pyPoker.PokerRank import PokerRank
 from pyPoker.Ranker import Ranker
@@ -480,6 +480,54 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEqual(hand_state.get_current_betting_round(), betting_round2)
         self.assertEqual(len(hand_state.betting_rounds), 2)
         self.assertIsNotNone(hand_state.dump_to_string())
+
+    def test_Structure_limit(self):
+        """Test a Limit Structure class"""
+        ante = 10
+        blinds = [50,100]
+        min_bets = [100,100,200,200]
+        structure = Structure(Structure.LIMIT, ante=ante,
+                              blinds=blinds, bet_sizes=min_bets)
+        self.assertIsNotNone(structure)
+        self.assertTrue(structure.is_limit())
+        self.assertFalse(structure.is_pot_limit())
+        self.assertFalse(structure.is_no_limit())
+        self.assertEqual(structure.get_ante(), ante)
+        self.assertListEqual(structure.get_blinds(), blinds)
+        betting_round = 1
+        self.assertEqual(
+            structure.get_minimum_bet(betting_round=betting_round),
+            min_bets[betting_round-1])
+
+    def test_Structure_pot_limit(self):
+        """Test a Limit Structure class"""
+        ante = 0
+        blinds = [10,20]
+        structure = Structure(Structure.POT_LIMIT, ante=ante, blinds=blinds)
+        self.assertIsNotNone(structure)
+        self.assertFalse(structure.is_limit())
+        self.assertTrue(structure.is_pot_limit())
+        self.assertFalse(structure.is_no_limit())
+        self.assertEqual(structure.get_ante(), ante)
+        self.assertListEqual(structure.get_blinds(), blinds)
+        # minimum bet should be big blind for all rounds
+        betting_round = 1
+        self.assertEqual(structure.get_minimum_bet(betting_round=betting_round),
+                         max(blinds))
+
+    def test_Structure_no_limit(self):
+        """Test a Limit Structure class"""
+        ante = 5
+        blinds = [10]
+        structure = Structure(Structure.LIMIT, ante=ante, blinds=blinds)
+        self.assertIsNotNone(structure)
+        self.assertTrue(structure.is_limit())
+        self.assertEqual(structure.get_ante(), ante)
+        self.assertListEqual(structure.get_blinds(), blinds)
+        # minimum bet should be big blind for all rounds
+        betting_round = 1
+        self.assertEqual(structure.get_minimum_bet(betting_round=betting_round),
+                         max(blinds))
 
 if __name__ == "__main__":
     unittest.main()
