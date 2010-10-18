@@ -13,14 +13,17 @@ from pyPoker.LowRanker import LowRanker
 from pyPoker.Player import Player, Table
 from pyPoker.PokerGame import \
     Action, InvalidActionException, \
-    MessageHandler, Pot, Result, Simulator, Stats
+    BettingRound, HandState, \
+    MessageHandler, Pot, Result, Simulator, Stats, \
+    PokerGameStateException
 from pyPoker.PokerRank import PokerRank
 from pyPoker.Ranker import Ranker
 
 class TestSequenceFunctions(unittest.TestCase):
 
     def setUp(self):
-	pass
+        # For message handlers
+        self.console = file("/tmp/pypoker-console.log", "a")
 
     def test_Simulator(self):
         """Test basic Simulator construction"""
@@ -327,6 +330,156 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEqual(player_one.stack, 50)
         self.assertEqual(player_two.stack, 50)
         self.assertEqual(player_three.stack, 100)
+
+    def test_BettingRound(self):
+        """Test BettingRound class"""
+        players = [ Player(stack=1000),
+                    Player(stack=1000),
+                    Player(stack=1000),
+                    Player(stack=1000) ]
+        table = Table()
+        table.seat_players(players, in_order=True)
+        message_handler = MessageHandler(table, self.console)
+        pot = Pot(players)
+        round = BettingRound(table, pot, message_handler)
+        self.assertIsNotNone(round)
+        self.assertEqual(round.table, table)
+        self.assertEqual(round.pot, pot)
+        self.assertRaises(PokerGameStateException, round.get_action_player)
+        action_is_on = players[1]
+        round.set_action(action_is_on)
+        self.assertEqual(round.get_action_player(), action_is_on)
+        self.assertIsNone(round.last_to_bet)
+        self.assertEqual(len(round.action_record), 0)
+        self.assertEqual(round.action_to_next_player(), players[2])
+        self.assertEqual(round.action_to_next_player(), players[3])
+        self.assertEqual(round.action_to_next_player(), players[0])
+        self.assertEqual(round.action_to_next_player(), players[1])
+        self.assertEqual(round.required_to_call(players[0]), 0)
+        self.assertFalse(round.is_pot_good())
+        # Have all players ante
+        round.process_action(Action.new_ante(5))
+        self.assertEqual(players[1].stack, 995)
+        self.assertEqual(round.get_action_player(), players[2])
+        self.assertEqual(round.last_to_bet, players[1])
+        round.process_action(Action.new_ante(5))
+        self.assertEqual(players[2].stack, 995)
+        self.assertEqual(round.get_action_player(), players[3])
+        self.assertEqual(round.last_to_bet, players[1])
+        round.process_action(Action.new_ante(5))
+        self.assertEqual(players[3].stack, 995)
+        self.assertEqual(round.get_action_player(), players[0])
+        self.assertEqual(round.last_to_bet, players[1])
+        round.process_action(Action.new_ante(5))
+        self.assertEqual(players[0].stack, 995)
+        self.assertEqual(round.get_action_player(), players[1])
+        self.assertEqual(round.last_to_bet, players[1])
+        self.assertTrue(round.is_pot_good())
+        self.assertEqual(round.sweep_bets_into_pot(), pot)
+        self.assertEqual(pot.amount, 20)
+        # New round
+        round = BettingRound(table, pot, message_handler)
+        self.assertIsNotNone(round)
+        round.set_action(action_is_on)
+        # Player 1 blinds, 2 blinds, 3 fold, 0 raises to 300
+        round.process_action(Action.new_blind(50))
+        self.assertEqual(players[1].bet, 50)
+        round.process_action(Action.new_blind(100))
+        round.process_action(Action.new_fold())
+        self.assertTrue(players[3].is_folded())
+        round.process_action(Action.new_raise(300))
+        self.assertFalse(round.is_pot_good())
+        self.assertEqual(round.get_action_player(), players[1])
+        self.assertEqual(len(round.action_record), 4)
+        self.assertEqual(round.total_pot(), 470)
+        # Player 1 calls, 2 raises all in, 3 has folded, 0 folds
+        self.assertEqual(round.required_to_call(), 250)
+        round.process_action(Action.new_call(250))
+        self.assertEqual(round.required_to_call(), 200)
+        round.process_action(Action.new_raise(895, all_in=True))
+        self.assertTrue(players[2].is_all_in())
+        # Make sure we skipped player 3 who folded earlier
+        self.assertEqual(round.get_action_player(), players[0])
+        self.assertEqual(round.required_to_call(), 695)
+        round.process_action(Action.new_fold())
+        self.assertFalse(round.is_pot_good())
+        self.assertEqual(round.total_pot(), 1615)
+        # Plater 1 calls and pot should be good
+        self.assertEqual(round.required_to_call(), 695)
+        round.process_action(Action.new_call(695, all_in=True))
+        self.assertTrue(round.is_pot_good())
+        self.assertEqual(round.total_pot(), 2310)
+        round.sweep_bets_into_pot()
+        # Should only be main pot
+        self.assertIsNone(pot.parent)
+        # All players bets should have beet swept into pot
+        for player in players:
+            self.assertEqual(0, player.bet,
+                             "Bet for %s == %d != 0" % (player, player.bet))
+        self.assertEqual(pot.amount, 2310)
+
+    def test_BettingRound_with_side_pots(self):
+        """Test of BettingRound with side pots."""
+        players = [ Player(stack=500),
+                    Player(stack=100),
+                    Player(stack=1000),
+                    Player(stack=700) ]
+        table = Table()
+        table.seat_players(players, in_order=True)
+        message_handler = MessageHandler(table, self.console)
+        pot = Pot(players)
+        round = BettingRound(table, pot, message_handler)
+        action_is_on = players[0]
+        round.set_action(action_is_on)
+        # Player 0 50 blind, player 1 100 blind (allin),
+        # player 2 raises to 300, player 4 calls
+        round.process_action(Action.new_blind(50))
+        round.process_action(Action.new_blind(100, all_in=True))
+        round.process_action(Action.new_raise(300))
+        round.process_action(Action.new_call(300))
+        # Player 0 raises 450 all-in, player 2 raises 700 all-in
+        # Player 3 folds
+        round.process_action(Action.new_raise(450, all_in=True))
+        # Make sure player 1, who is all-in, is skipped
+        self.assertEqual(round.get_action_player(), players[2])
+        round.process_action(Action.new_raise(700, all_in=True))
+        round.process_action(Action.new_fold())
+        self.assertTrue(round.is_pot_good())
+        round.sweep_bets_into_pot()
+        # At this point we should have a main point with 400
+        # between 0,1 and 2, a side pot with 1000 between players 0 and 2,
+        # and a side pot of 500 with just player 2.
+        side_pot1 = round.pot
+        self.assertEqual(side_pot1.amount, 500)
+        self.assertListEqual(side_pot1.contending_players, [players[2]])
+        self.assertIsNotNone(side_pot1.parent)
+       
+    def test_HandState(self):
+        """Test HandState class"""
+        players = [ Player(stack=500),
+                    Player(stack=100),
+                    Player(stack=1000),
+                    Player(stack=700) ]
+        table = Table()
+        table.seat_players(players, in_order=True)
+        message_handler = MessageHandler(table, self.console)
+        hand_state = HandState(table, message_handler)
+        self.assertIsNotNone(hand_state)
+        self.assertEqual(hand_state.table, table)
+        for player in players:
+            self.assertIsNotNone(player._hand)
+        hand_state.deal_cards(5)
+        for player in players:
+            self.assertEqual(len(player._hand), 5)
+        betting_round = hand_state.new_betting_round()
+        self.assertIsNotNone(betting_round)
+        self.assertEqual(hand_state.get_current_betting_round(), betting_round)
+        self.assertEqual(len(hand_state.betting_rounds), 1)
+        betting_round2 = hand_state.new_betting_round()
+        self.assertIsNotNone(betting_round2)
+        self.assertEqual(hand_state.get_current_betting_round(), betting_round2)
+        self.assertEqual(len(hand_state.betting_rounds), 2)
+        self.assertIsNotNone(hand_state.dump_to_string())
 
 if __name__ == "__main__":
     unittest.main()

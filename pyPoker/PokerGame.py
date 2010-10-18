@@ -537,3 +537,284 @@ class MessageHandler(object):
         # Assuming single-line message
         if self.console:
             self.console.write(msg.rstrip() + "\n")
+
+######################################################################
+
+class HandState(object):
+    """State of a given hand.
+
+    After creation, use process_action() to add actions. Complete processing
+    with finish_processing() after which no more acctions should be processed.
+    """
+
+    def __init__(self, table, message_handler=None):
+        """players should be array of players to be seated.
+
+        deal must be the player who is the current dealer. If None, the
+        lowest seated player will be the dealer.
+
+        message handler must be a MessageHandler instance or None."""
+        self.table = table
+        self.message_handler = message_handler
+
+        #
+        # Private state not available to players
+        #
+        self._deck = Deck()
+        self._deck.shuffle()
+
+        active_players = self.table.get_active_players()
+
+        # Create main pot to start with
+        self.pot = Pot(contending_players = active_players)
+        # Create initial hands
+        for player in active_players:
+            player.new_hand()
+        # Record of betting rounds
+        self.betting_rounds = []
+
+
+    def deal_cards(self, number_of_cards=1):
+        """Deal number_of_cards to each player."""
+        for card in range(number_of_cards):
+            for player in self.table.get_active_players():
+                player.deal_card(self._deck)
+
+    def new_betting_round(self):
+        """Create a new betting round"""
+        new_round = BettingRound(self.table,
+                                   self.pot,
+                                   message_handler=self.message_handler)
+        self.betting_rounds.append(new_round)
+        return new_round
+
+    def get_current_betting_round(self):
+        """Return the current betting round"""
+        return self.betting_rounds[len(self.betting_rounds) - 1]
+
+    def dump_to_string(self):
+        """Dump our state to a string for debugging."""
+        s = ""
+        s += str(self.table)
+        s += str(self.pot)
+        s += "On betting round %d" % (len(self.betting_rounds) + 1)
+        return s
+
+    def _message(self, msg):
+        """Handle a message"""
+        if self.message_handler is not None:
+            self.message_handler.message(msg)
+
+    def _debug(self, msg):
+        """Handle a debug message"""
+        if self.message_handler is not None:
+            self.message_handler.debug(msg)
+
+######################################################################
+
+class BettingRound(object):
+    """State and logic associated with a round of betting."""
+
+    def __init__(self, table, pot, message_handler=None):
+        """
+        pot must be a Pot instance that will be modified in place.
+        
+        action_is_on must a Player contending for pot
+        indicating the player who is first to act.
+        """
+        self.table = table
+        self.pot = pot
+        self.message_handler = message_handler
+        #
+        # Who is the action on?
+        self.action_is_on = None
+        #
+        # Last player to bet or raise
+        self.last_to_bet = None
+        #
+        # Is pot good?
+        self.pot_is_good = False
+        #
+        # Record of (player, actions)
+        self.action_record = []
+        self._debug("New BettingRound")
+
+    def get_action_player(self):
+        """Return the player whom the action is on"""
+        if self.action_is_on is None:
+            raise PokerGameStateException("Action has not been set")
+        return self.action_is_on
+
+    def set_action(self, player):
+        """Set the action to the given player"""
+        if player not in self.table.get_seated_players():
+            raise ValueError("Player not at table")
+        self.action_is_on = player
+
+    def action_to_next_player(self):
+        """Move action to the next active player.
+
+        Sets pot_is_good to True if action is complete.
+
+        Return index of new active player"""
+        if self.action_is_on is None:
+            raise PokeGameStateException(
+                "Player whom action is on is not defined")
+        try:
+            self.action_is_on = \
+                self.table.get_next_player(self.action_is_on,
+                                           filter=lambda p: p.is_active())
+        except IndexError:
+            # No active players left, set action on last_to_bet to
+            # trigger pot_is_good logic below
+            self.action_is_on = self.last_to_bet
+        if self.action_is_on is self.last_to_bet:
+            # Action is back on last player to bet or raise,
+            # pot is now good.
+            self.pot_is_good = True
+            self._message("Pot is good.")
+        return self.action_is_on
+
+    def is_pot_good(self):
+        """Return true if the pot is good and betting is complete."""
+        return self.pot_is_good
+
+    def required_to_call(self, player=None):
+        """How much does the given player have to put into the pot to call?
+
+        If player is None, then the current player whom the action on
+        is used."""
+        if player is None:
+            player = self.action_is_on
+        return self.max_bet() - player.bet
+
+    def total_pot(self, player=None):
+        """What is the total of pots plus bets not swept into pot yet we are playing for?
+
+        Only counts bets up to what player can contend for.
+
+        If player is None, calculates for current player action is on."""
+        if player is None:
+            player = self.action_is_on
+        bets = [player.bet for player in self.table.get_seated_players()]
+        # Figure out total of bets that player can contend for
+        bet_total = sum(map(lambda b: min(b, player.bet + player.stack), bets))
+        return bet_total + self.pot.amount
+
+    def process_action(self, action):
+        """Process action for current player to act
+
+        action must already have been valided per structure.
+
+        Advances action to next player."""
+        if self.action_is_on is None:
+            raise PokeGameStateException(
+                "Player whom action is on is not defined")
+        player = self.action_is_on  # For convienence
+        required_to_call = self.required_to_call(player)
+        if action.is_ante():
+            player.process_action(action)
+            if self.last_to_bet is None:
+                self.last_to_bet = player
+        elif action.is_bet():
+            if required_to_call > 0:
+                raise InvalidActionException(\
+                    "Bet not allowed when call required")
+            player.process_action(action)
+            self.last_to_bet = player
+        elif action.is_blind():
+            # Do not set last_to_bet here as a blind does not prevent
+            # player from acting when betting comes back around to them.
+            player.process_action(action)
+        elif action.is_call():
+            if (action.amount != required_to_call) and not action.is_all_in():
+                raise InvalidActionException(\
+                    "Call not of correct amount (%d)" % required_to_call)
+            player.process_action(action)
+            # Call of a blind counts as a bet
+            if self.last_to_bet is None:
+                self.last_to_bet = player
+        elif action.is_check():
+            if required_to_call > 0:
+                raise InvalidActionException(\
+                    "Check not allowed when call required")
+            # An opening check counts as a bet of zero
+            if self.last_to_bet is None:
+                self.last_to_bet = player
+        elif action.is_fold():
+            self.pot.fold_player(player)
+            player.status = player.STATUS_FOLDED
+        elif action.is_raise():
+            if (action.amount <= required_to_call) and not action.is_all_in():
+                raise InvalidActionException("Raise too small")
+            player.process_action(action)
+            self.last_to_bet = player
+        self.action_record.append((player, action))
+        self._debug("Action: %s by %s" % (action, player))
+        if action.is_all_in():
+            player.status = player.STATUS_ALL_IN
+        self.action_to_next_player()
+
+    def sweep_bets_into_pot(self):
+        """Complete processing, generating side pots as needed for all-ins.
+
+        Returns Pot instance."""
+        # All folded players have had their bets put into pot already
+        # by process_action(), so we should only be dealing with live
+        # players.
+        if not self.is_pot_good():
+            raise PokerGameStateException(
+                "sweep_bets_into_pot() called before pot is good")
+        self._debug("Sweeping bets into pot")
+        # Loop until no play has money to be put into pot
+        while self.max_bet() > 0:
+            all_ins = filter(lambda p: p.is_all_in(), self.players_with_bets())
+            if len(all_ins) == 0:
+                # No all-ins, just sweep bets into pot
+                self.pot.pull_bets()
+                break
+            else:
+                # We have one or more all-ins.
+                # Find the smallest all-in bet size
+                smallest_all_in_bet_size = \
+                    min([player.bet for player in all_ins])
+                smallest_all_in_players = \
+                    filter(lambda p: p.bet == smallest_all_in_bet_size,
+                           all_ins)
+                self._debug("Handling all-in of %d: %s " % \
+                                (smallest_all_in_bet_size,
+                                 " ".join([str(p) for p in \
+                                               smallest_all_in_players])))
+                # Sanity check
+                if smallest_all_in_bet_size == 0:
+                    raise PokerGameStateException("Smallest all-in bet is zero")
+                # Subtract this all-in bet from all bets and put
+                # into current pot
+                self.pot.pull_bets(maximum_pull = smallest_all_in_bet_size)
+                if len(self.players_with_bets()) > 0:
+                    # If we only have one one player left we go
+                    # ahead and create another pot which that player will
+                    # automatically win.
+                    self.pot.new_side_pot()
+        self._debug("Sweep into pot complete")
+        return self.pot
+
+    def max_bet(self):
+        """Return the larger total bet by any player."""
+        return max([player.bet for player in self.table.get_seated_players()])
+
+    def players_with_bets(self):
+        """Return an array of players with non-zero bets."""
+        return filter(lambda p: (p is not None) and (p.bet > 0),
+                      self.table.get_seated_players())
+
+    def _message(self, msg):
+        """Handle a message"""
+        if self.message_handler is not None:
+            self.message_handler.message(msg)
+
+    def _debug(self, msg):
+        """Handle a debug message"""
+        if self.message_handler is not None:
+            self.message_handler.debug(msg)
+
