@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Unittests for PokerGame module"""
 
+import StringIO
 import unittest
 
 from pyPoker import HoldEm
@@ -9,9 +10,10 @@ from pyPoker.Deck import Deck
 from pyPoker.Hand import Board
 from pyPoker.Hands import Hands
 from pyPoker.LowRanker import LowRanker
+from pyPoker.Player import Table
 from pyPoker.PokerGame import \
     Action, InvalidActionException, \
-    Result, Simulator, Stats
+    MessageHandler, Result, Simulator, Stats
 from pyPoker.PokerRank import PokerRank
 from pyPoker.Ranker import Ranker
 
@@ -208,6 +210,17 @@ class TestSequenceFunctions(unittest.TestCase):
         def f():
             raise InvalidActionException()
         self.assertRaises(InvalidActionException, f)
+
+    def test_MessageHander(self):
+        """Test the MessageHandler class"""
+        buffer = StringIO.StringIO()
+        handler = MessageHandler(Table(), console=buffer)
+        s = "Hello world"
+        handler.message(s)
+        self.assertEqual(buffer.getvalue(), s + "\n")
+        s2 = "Hello again"
+        handler.debug(s2)
+        self.assertEqual(buffer.getvalue(), s + "\n" + "DEBUG: " + s2 + "\n")
 
 if __name__ == "__main__":
     unittest.main()

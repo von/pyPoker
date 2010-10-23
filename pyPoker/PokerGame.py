@@ -382,3 +382,38 @@ class Action(object):
         if self.all_in:
             s += " (all-in)"
         return s
+
+######################################################################
+
+class MessageHandler(object):
+    """Handle messages from PokerGame
+
+    This delivers messages to all players involved in a game plus a
+    console intended for debugging."""
+
+    def __init__(self, table, console=None):
+        """Create a MessageHandler instance.
+
+        players should be an array of Player instances to whom messages
+        should be past.
+
+        console should be a file descriptor to receive debug messages.
+        If None, debug messages will be dropped.
+        """
+        self.table = table
+        self.console = console
+        
+    def message(self, msg):
+        """Deliver a message to all players and the console"""
+        self._write_to_console(msg)
+        for player in self.table.get_seated_players():
+            player.message(msg)
+
+    def debug(self, msg):
+        """Handle a debug message only delivered to console."""
+        self._write_to_console("DEBUG: " + msg)
+
+    def _write_to_console(self, msg):
+        # Assuming single-line message
+        if self.console:
+            self.console.write(msg.rstrip() + "\n")
