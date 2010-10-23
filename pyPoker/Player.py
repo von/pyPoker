@@ -1,7 +1,30 @@
-"""Module for classes representing a PokerGame player"""
+"""Module for classes representing a PokerGame player and table of players"""
+
+import random
 
 from Hand import Hand
+from PokerException import PokerException
 from PokerGame import Action, InvalidActionException
+
+######################################################################
+#
+# Exceptions
+#
+
+class PlayerAlreadySeatedException(PokerException):
+    """Player is already seated at this table."""
+    pass
+
+class SeatFullException(PokerException):
+    """Seat is already taken."""
+    pass
+
+class TableFullException(PokerException):
+    """Table is full."""
+    pass
+
+
+######################################################################
 
 class Player(object):
     """Interface to a player in a game.
@@ -93,4 +116,128 @@ class Player(object):
     def __str__(self):
         return self.name
 
+######################################################################
 
+class Table(object):
+    """Collection of players at a table"""
+
+    def __init__(self, number_of_seats=9, players=None):
+        """Create a table with given number of seats.
+
+        Seat array of players if given."""
+        self.number_of_seats = number_of_seats
+        # One extra seat for seat 0 which we don't use to keep
+        # indexing simple.
+        self.players = [ None ] * (number_of_seats + 1)
+        if players is not None:
+            self.seat_players(players)
+        self.dealer = None
+
+    def seat_player(self, player, seat_number=None):
+        """Seat the given player.
+
+        If seat_number is given, seat player there, otherwise chose randomly."""
+        if player in self.players:
+            raise PlayerAlreadySeatedException(
+                "Player %s is already seated" % player)
+        if seat_number is None:
+            empty_seats = self.get_empty_seats()
+            if len(empty_seats) == 0:
+                raise TableFullException()
+            seat_number = random.choice(empty_seats)
+        else:
+            if self.players[seat_number] is not None:
+                raise SeatFullException()
+        self.players[seat_number] = player
+
+    def seat_players(self, players, in_order=False):
+        """Randomly seat the given players.
+
+        If in_order is True, seat in order at lowest numbered seats."""
+        if in_order:
+            empty_seats = self.get_empty_seats()
+            for player in players:
+                if len(empty_seats) == 0:
+                    raise TableFullException()
+                self.seat_player(player, seat_number=empty_seats.pop(0))
+        else:
+            for player in players:
+                self.seat_player(player)
+
+    def get_seated_players(self):
+        """Return an array of seated players"""
+        return filter(lambda p: p is not None, self.players)
+
+    def get_player_seat(self, player):
+        """Given a player return their seat number"""
+        return self.players.index(player)
+
+    def get_player_by_seat(self, seat):
+        """Given a seat number, return the player sitting there"""
+        return self.players[seat]
+
+    def get_empty_seats(self):
+        """Return an array of seat numbers which are empty"""
+        return filter(lambda n: self.players[n] is None,
+                      range(1, len(self.players)))
+
+    def get_active_players(self):
+        """Return an array of players who are active in the hand.
+
+        This means players are not sitting out or have folded."""
+        return filter(lambda p: p.is_active() or p.is_all_in(),
+                      self.get_seated_players())
+
+    def get_next_player(self, starting_player, filter=None):
+        """Return the next player clockwise from given player.
+
+        If filter is not none, it should be a function used to filter
+        out players. If it returns False, player will be skipped. If
+        no players passes filter, IndexError is raised.
+
+        May return given player if logic so dictates."""
+        starting_seat = self.get_player_seat(starting_player)
+        seat = (starting_seat + 1) % len(self.players)
+        while True:
+            if (self.players[seat] is not None) and \
+                    ((filter is None) or filter(self.players[seat])):
+                break
+            if seat == starting_seat:
+                # We've go all the way around without a match
+                raise IndexError()
+            seat = (seat + 1) % len(self.players)
+        return self.players[seat]
+
+    def random_dealer(self):
+        """Make a random player the dealer."""
+        # XXX Should we choose a player with a non-zero stack?
+        self.dealer = random.choice(self.get_seated_players())
+
+    def set_dealer(self, player):
+        """Set the dealer to the given player."""
+        self.dealer = player
+
+    def get_dealer(self):
+        """Return the current dealer"""
+        return self.dealer
+
+    def advance_dealer(self):
+        """Advance the dealer to the next player"""
+        # XXX Should we choose a player with a non-zero stack?
+        try:
+            self.dealer = self.get_next_player(self.dealer)
+        except IndexError:
+            # No other player available, leave button where it is
+            pass
+
+    def __str__(self):
+        player_strings = []
+        for seat, player in enumerate(self.players):
+            if player is None:
+                continue
+            s = "%d: %s" % (seat, player)
+            if player == self.get_dealer():
+                s+= "*"
+            player_strings.append(s)
+        return " ".join(player_strings)
+            
