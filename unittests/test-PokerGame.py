@@ -7,14 +7,15 @@ import unittest
 from pyPoker import HoldEm
 from pyPoker.Cards import Cards, Rank
 from pyPoker.Deck import Deck
-from pyPoker.Hand import Board
+from pyPoker.Hand import Board, Hand
 from pyPoker.Hands import Hands
 from pyPoker.LowRanker import LowRanker
 from pyPoker.Player import Player, Table
 from pyPoker.PokerGame import \
     Action, InvalidActionException, \
     BettingRound, HandState, \
-    MessageHandler, Pot, Result, Simulator, Stats, Structure, \
+    Game, MessageHandler, Pot, \
+    Result, Simulator, Stats, Structure, \
     PokerGameStateException
 from pyPoker.PokerRank import PokerRank
 from pyPoker.Ranker import Ranker
@@ -528,6 +529,53 @@ class TestSequenceFunctions(unittest.TestCase):
         betting_round = 1
         self.assertEqual(structure.get_minimum_bet(betting_round=betting_round),
                          max(blinds))
+
+    def test_Game(self):
+        """Test Game class"""
+        players = [
+            Player(name="Player One", stack=1000),
+            Player(name="Player Two", stack=1000),
+            Player(name="Player Three", stack=1000)
+            ]
+        table = Table(players = players)
+        structure = Structure(Structure.LIMIT, ante=5, blinds=[10])
+        game = Game(table, structure, console=self.console)
+        self.assertIsNotNone(game)
+        self.assertEqual(game.table, table)
+        self.assertEqual(game.structure, structure)
+        # Default MessageHander should be created.
+        self.assertIsNotNone(game.message_handler)
+        game.message("Test message")
+        game.debug("Test debug message")
+        # Simulate play_hand()
+        hand_state = HandState(table, game.message_handler)
+        game.antes(hand_state)
+        self.assertEqual(hand_state.pot.amount, 15)
+        game.action_to_left_of_dealer(hand_state)
+        betting_round = hand_state.get_current_betting_round()
+        self.assertIsInstance(betting_round, BettingRound)
+        self.assertIsInstance(betting_round.get_action_player(), Player)
+        game.blinds(hand_state)
+        self.assertEqual(betting_round.total_pot(), 25)  # Antes + 10 blind
+        game.deal_hands(hand_state)
+        for player in players:
+            self.assertEqual(len(player._hand), 5)
+        game.betting_round(hand_state)
+        self.assertTrue(betting_round.is_pot_good())
+        game.pot_to_high_hand(hand_state)
+
+    def test_Game_play_hand(self):
+        """Test Game.play_hand() method"""
+        players = [
+            Player(name="Player One", stack=1000),
+            Player(name="Player Two", stack=1000),
+            Player(name="Player Three", stack=1000)
+            ]
+        table = Table(players = players)
+        structure = Structure(Structure.LIMIT, ante=5, blinds=[10])
+        game = Game(table, structure, console=self.console)
+        hand_state = game.play_hand()
+        self.assertIsInstance(hand_state, HandState)
 
 if __name__ == "__main__":
     unittest.main()

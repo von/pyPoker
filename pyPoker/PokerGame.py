@@ -2,6 +2,7 @@
 
 import copy
 import itertools
+import random
 
 from PokerException import PokerException
 from Hand import Hand, CommunityCardHand
@@ -264,6 +265,153 @@ class Stats(object):
     def get_scoops(self):
         """Return an array with number of scoops by each hand"""
         return self.scoops
+
+######################################################################
+
+class Game(object):
+    """Class holding all the state and logic for a Poker game with betting."""
+
+    # Class to use for hands
+    HandClass = Hand
+
+    # Class for determining high hands
+    HighRanker = Ranker
+
+    # Class for determinging low winners
+    LowRanker = None
+
+    # Steps to playing a hand. This should be overriden by class classes.
+    STEPS = [
+        "antes",
+        "action_to_left_of_dealer",
+        "blinds",
+        "deal_hands",
+        "betting_round",
+        "pot_to_high_hand",
+        ]
+
+    def __init__(self,
+                 table,
+                 structure,
+                 console=None):
+        """table must be a Table instance.
+
+        structure must be a Structure instance represent game structure.
+
+        console must be a stream to which a copy of all messages
+        should be delivered or None if messages should be discarded.
+        """
+        # Todo: sanity check arguments
+        self.table = table
+        self.structure = structure
+        self.message_handler = MessageHandler(table, console)
+        table.random_dealer()
+        self.message("New game")
+        self.debug("Table: %s" % table)
+
+    def report_action(self, player, action):
+        """Report on the given action"""
+        self.message("%s %s" % (player, action))
+
+    def message(self, msg):
+        """Handle a message about the game."""
+        self.message_handler.message(msg)
+
+    def debug(self, msg):
+        """Handle a debug message about the game."""
+        self.message_handler.debug(msg)
+
+    def play_hand(self):
+        """Play a hand."""
+        self.message("New hand starting")
+        hand_state = HandState(self.table, self.message_handler)
+        for step in self.STEPS:
+            self.debug("Hand step: %s" % step)
+            code = "self.%s(hand_state)" % step
+            eval(code)
+        self.table.advance_dealer()
+        return hand_state
+
+    #
+    # Methods that provide steps
+    #
+
+    def antes(self, hand_state):
+        """Handle antes."""
+        ante_amount = self.structure.get_ante()
+        if ante_amount > 0:
+            self.message("Collecting ante of %d" % ante_amount)
+            active_players = self.table.get_active_players()
+            betting = hand_state.new_betting_round()
+            betting.set_action(active_players[0])
+            for player in active_players:
+                if player.stack < ante_amount:
+                    action = Action.new_ante(player.stack,
+                                             all_in=True)
+                else:
+                    action = Action.new_ante(ante_amount)
+                betting.process_action(action)
+                self.report_action(player, action)
+            betting.sweep_bets_into_pot()
+
+    def action_to_left_of_dealer(self, hand_state):
+        """Create new BettingRound and set action to dealer's left"""
+        action_is_on = self.table.get_next_player(
+            self.table.get_dealer(),
+            filter=lambda p: p.is_active() and p.stack > 0)
+        self.message("Action starts on %s" % action_is_on)
+        round = hand_state.new_betting_round()
+        round.set_action(action_is_on)
+
+    def blinds(self, hand_state):
+        """Handle blinds."""
+        # XXX What if # blinds < # players?
+        blinds = self.structure.get_blinds()
+        betting = hand_state.get_current_betting_round()
+        for blind in blinds:
+            player = betting.get_action_player()
+            if player.stack < blind:
+                action = Action.new_blind(player.stack,
+                                          all_in=True)
+            else:
+                action = Action.new_blind(blind)
+            betting.process_action(action)
+            self.report_action(player, action)
+
+    def deal_hands(self, hand_state):
+        """Deal full hands to all players."""
+        hand_state.deal_cards(self.HandClass.maxCards)
+
+    def betting_round(self, hand_state):
+        """Handle betting"""
+        self.debug("Round of betting")
+        betting_round = hand_state.get_current_betting_round()
+        while not betting_round.is_pot_good():
+            player = betting_round.get_action_player()
+            self.debug("Action is on %s" % player)
+            action = player.get_action(self, hand_state)
+            betting_round.process_action(action)
+            self.report_action(player, action)
+        betting_round.sweep_bets_into_pot()
+
+    def pot_to_high_hand(self, hand_state):
+        """Award pot to high hand using cls.HighRanker"""
+        # First calculate high ranks for all plays with hands
+        high_ranks = {}
+        for player in self.table.get_active_players():
+            high_ranks[player] = self.HighRanker.rankHand(player._hand)
+        # Now awarding pots starting with last side pot
+        pot = hand_state.pot
+        while pot is not None:
+            winning_players = max(pot.contending_players,
+                                  lambda p: high_ranks[p])
+            winning_rank = high_ranks[winning_players[0]]
+            self.message("%s to %s with %s" % \
+                             (pot,
+                              ",".join([str(p) for p in winning_players]),
+                              winning_rank))
+            pot.distribute(high_winners = winning_players)
+            pot = pot.parent
 
 ######################################################################
 
@@ -894,4 +1042,3 @@ class Structure(object):
         if action.amount != bet_size:
             raise InvalidActionException("Invalid bet size: %d != %d" % \
                                              (action.amount, bet_size))
-
