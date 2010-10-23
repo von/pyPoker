@@ -77,6 +77,7 @@ UNITTESTS = \
 	test-SevenCardStud \
 	test-PokerRank \
 	test-HandGenerator \
+	test-Player \
 	test-PokerGame \
 	test-Ranker
 
