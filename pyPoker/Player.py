@@ -88,7 +88,29 @@ class Player(object):
         """Get a players betting action.
 
         Returns a Action instance."""
-        raise NotImplementedException()
+        betting_round = hand_state.get_current_betting_round()
+        required_to_call = betting_round.required_to_call()
+        minimum_bet = game.structure.get_minimum_bet(betting_round)
+        random_number = random.random()
+        if required_to_call == 0:
+            # No bet required, check 75%, bet 25%
+            if random_number < .75:
+                action = Action.new_check()
+            else:
+                action = Action.new_bet(min(minimum_bet, self.stack),
+                                        all_in=minimum_bet >= self.stack)
+        else:
+            # Bet in front of us, fold 50%, call 35%, raise 15%
+            if random_number < .50:
+                action = Action.new_fold()
+            elif (random_number < .85) or (self.stack <= required_to_call):
+                action = Action.new_call(min(required_to_call, self.stack),
+                                         all_in=required_to_call >= self.stack)
+            else:
+                raise_amount = required_to_call + minimum_bet
+                action = Action.new_raise(min(raise_amount, self.stack),
+                                          all_in=raise_amount >= self.stack)
+        return action
 
     def message(self, string):
         """Handle a message to the player.
