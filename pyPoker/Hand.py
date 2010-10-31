@@ -21,6 +21,10 @@ class HandHasNoBoardException(PokerException):
     """Tried to set or get a board for a hand that doesn't support it."""
     pass
 
+class TooManyCardsException(PokerException):
+    """Tried to add more cards to a Hand then it should hold."""
+    pass
+
 ######################################################################
 #
 # Hand Class
@@ -106,6 +110,20 @@ class Hand(Cards):
 	if self.board:
 	    cards.extend(self.board)
 	return Cards.combinations(cards, n)
+
+    def combinations_of_eight_or_lower(self, n):
+        """Generator function returns all combinations (including community
+        cards) of n cards that are 8 or lower (including aces).
+
+        If there aren't n cards 8 or lower, return noths."""
+        cards = self.getEightOrLower()
+        if self.board:
+            cards.extend(self.board.getEightOrLower())
+        cards = cards.removeDuplicateRanks()
+        # Do not fail if we don't have enough cards 8 or lower
+        if len(cards) < n:
+            return iter([])
+        return Cards.combinations(cards, n)
 
     def eq(self, otherHand):
 	"""Are two hands identical (including suits)?"""

@@ -5,7 +5,7 @@ from pyPoker import Omaha
 from pyPoker.Cards import Cards, Rank, Suit
 from pyPoker.Hand import Board, Hand
 from pyPoker.Hands import Hands
-from pyPoker.LowRanker import LowRanker
+from pyPoker.LowRanker import EightLowRanker, LowRanker
 from pyPoker.PokerRank import PokerRank
 import unittest
 
@@ -109,12 +109,35 @@ class TestSequenceFunctions(unittest.TestCase):
 				     ( i, hands[i], ranks[i],
 				       j, hands[j], ranks[j]))
 
+
+    def testBestHand(self):
+        """Test bestHand() method"""
+        hands = [
+            Hand.fromString("AC 9D KS 3D KH"), # Pair of Kings
+            Hand.fromString("9C TS QH JC 8H"), # Q-high
+            Hand.fromString("KD TH 7C 6C 2H"), # K-high
+            Hand.fromString("AD JD 8D 4D 2D"), # J-high
+            Hand.fromString("7S QD QS QC 6D"), # Trip queens
+            Hand.fromString("8S 7C 2C 3D 5H"), # 8-high
+            ]
+        best_hands, best_rank = self.ranker.bestHand(hands)
+        self.assertIsNotNone(best_hands)
+        self.assertIsInstance(best_hands, list)
+        self.assertEqual(len(best_hands), 1)
+        self.assertEqual(best_hands[0], 5) # 8-high
+        self.assertIsNotNone(best_rank)
+        self.assertIsInstance(best_rank, PokerRank)
+        self.assertEqual(best_rank.getType(), PokerRank.HIGH_CARD)
+        self.assertEqual(best_rank.getPrimaryCardRank(), Rank.EIGHT)
+
     def testOmahaLow(self):
-	"""Test Omaha low hand ranking."""
+	"""Test Omaha low hand ranking with EightLowRanker."""
+        ranker = EightLowRanker()
 	hand = Omaha.Hand.fromString("5D 6H 9H 3C")
 	board = Board.fromString("4H 6C JH KH 8C")
 	hand.setBoard(board)
-	rank = self.ranker.rankHand(hand)
+	rank = ranker.rankHand(hand)
+        self.assertIsNotNone(rank)
 	self.assertEqual(rank.getType(), PokerRank.HIGH_CARD,
                          "rank = %s" % rank)
 	self.assertEqual(rank.getPrimaryCardRank(), Rank.EIGHT,
@@ -122,17 +145,46 @@ class TestSequenceFunctions(unittest.TestCase):
 							    rank.kickersAsString()))
 
     def testOmahaLow2(self):
-	"""Test Omaha low hand ranking."""
+	"""Test Omaha low hand ranking with EightLowRanker."""
+        ranker = EightLowRanker()
 	hand = Omaha.Hand.fromString("QC AH TC 8C")
 	board = Board.fromString("2H JH 4D 6H 3H")
 	hand.setBoard(board)
-	rank = self.ranker.rankHand(hand)
+	rank = ranker.rankHand(hand)
+        self.assertIsNotNone(rank)
 	self.assertEqual(rank.getType(), PokerRank.HIGH_CARD,
                          "rank = %s" % rank)
 	self.assertEqual(rank.getPrimaryCardRank(), Rank.EIGHT,
 			 "primaryCard = %s kickers = %s" % (rank.getPrimaryCardRank(),
 							    rank.kickersAsString()))
 
+    def testOmahaLow3(self):
+	"""Test Omaha low hand ranking with EightLowRanker."""
+        ranker = EightLowRanker()
+	hand = Omaha.Hand.fromString("QC AH TC 5C")
+	board = Board.fromString("2H JH 4D 6H KH")
+	hand.setBoard(board)
+	rank = ranker.rankHand(hand)
+        self.assertIsNotNone(rank)
+	self.assertEqual(rank.getType(), PokerRank.HIGH_CARD,
+                         "rank = %s" % rank)
+	self.assertEqual(rank.getPrimaryCardRank(), Rank.SIX,
+			 "primaryCard = %s kickers = %s" % (rank.getPrimaryCardRank(),
+							    rank.kickersAsString()))
+
+    def testOmahaNoLow(self):
+	"""Test Omaha low hand ranking of hand without low with EightLowRanker."""
+        ranker = EightLowRanker()
+	hand = Omaha.Hand.fromString("QC AH TC 9C")
+	board = Board.fromString("2H JH 4D 6H 3H")
+	hand.setBoard(board)
+	rank = ranker.rankHand(hand)
+        self.assertIsNone(rank)
+	hand = Omaha.Hand.fromString("QC AH TC 8C")
+	board = Board.fromString("2H JH KD JS 3H")
+	hand.setBoard(board)
+	rank = ranker.rankHand(hand)
+        self.assertIsNone(rank)
 
 if __name__ == "__main__":
     unittest.main()

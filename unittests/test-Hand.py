@@ -2,11 +2,12 @@
 """Unittests for Hand module"""
 
 from pyPoker.Cards import Card, Suit, Rank
-from pyPoker.Hand import Hand, Board
+from pyPoker.Hand import Hand, Board, TooManyCardsException
 from pyPoker import HoldEm
-import unittest
 
-class TestSequenceFunctions(unittest.TestCase):
+import testing
+
+class TestSequenceFunctions(testing.TestCase):
 
     def setUp(self):
 	pass
@@ -22,42 +23,71 @@ class TestSequenceFunctions(unittest.TestCase):
 	self.assertEquals(hand[2].suit, Suit.HEARTS)
 	self.assertEquals(hand[2].rank, Rank.TEN)
 
+    def test_too_many_cards(self):
+        """Test adding too many cards to a hand."""
+        hand = Hand.fromString("AC 2C 3C 4C 5C")
+        self.assertEquals(len(hand), 5)
+        with self.assertRaises(TooManyCardsException):
+            hand.append(Card.fromString("6C"))
+        self.assertEquals(len(hand), 5)
+
     def testCombinations(self):
 	"""Test basic hand combinatins."""
 	hand = Hand.fromString("8C 9D 7C 6S AH")
-	count = 0
-	for combs in hand.combinations(2):
-	    count += 1
-	    self.assertEquals(len(combs), 2)
-	self.assertEquals(count, 10)
+        self.assert_iterator(hand.combinations(2),
+                             count=10,
+                             assert_item_function=lambda i: len(i)==2)
 
     def testBoardCombinations(self):
 	"""Test combinations with board."""
 	hand = HoldEm.Hand.fromString("AD 2D")
 	board = Board.fromString("3D 4D 5D")
 	hand.setBoard(board)
-	count = 0
-	for combs in hand.combinations(2):
-	    count += 1
-	    self.assertEquals(len(combs), 2)
-	self.assertEquals(count, 10)
-	count = 0
-	for combs in hand.combinations(5):
-	    count += 1
-	    self.assertEquals(len(combs), 5)
-	self.assertEquals(count, 1)
+        self.assert_iterator(hand.combinations(2),
+                             count=10,
+                             assert_item_function=lambda i: len(i) == 2)
+        self.assert_iterator(hand.combinations(5),
+                             count=1,
+                             assert_item_function=lambda i: len(i) == 5)
 	board.addCardFromString("6D")
-	count = 0
-	for combs in hand.combinations(5):
-	    count += 1
-	    self.assertEquals(len(combs), 5)
-	self.assertEquals(count, 6)
+        self.assert_iterator(hand.combinations(5),
+                             count=6,
+                             assert_item_function=lambda i: len(i) == 5)
 	board.addCardFromString("7D")
-	count = 0
-	for combs in hand.combinations(5):
-	    count += 1
-	    self.assertEquals(len(combs), 5)
-	self.assertEquals(count, 21)
+        self.assert_iterator(hand.combinations(5),
+                             count=21,
+                             assert_item_function=lambda i: len(i) == 5)
+
+    def test_combinations_of_eight_or_lower(self):
+        """Test combinations_of_eight_or_lower() method"""
+        h = Hand.fromString("AC 2D 3H 4S TH")
+        self.assert_iterator(h.combinations_of_eight_or_lower(5),
+                             count=0)
+        h = Hand.fromString("AC 2D 3H 4S 5H")
+        self.assert_iterator(h.combinations_of_eight_or_lower(5),
+                             count=1,
+                             assert_item_function=lambda i: len(i)==5)
+        
+    def test_combinations_of_eight_or_lower_with_board(self):
+        """Test combinations_of_eight_or_lower() method on hand with board"""
+        hand = HoldEm.Hand.fromString("AD 2D")
+	board = Board.fromString("3D 4D 5D")
+	hand.setBoard(board)
+        self.assert_iterator(hand.combinations_of_eight_or_lower(2),
+                             count=10,
+                             assert_item_function=lambda i: len(i)==2)
+        self.assert_iterator(hand.combinations_of_eight_or_lower(5),
+                             count=1,
+                             assert_item_function=lambda i: len(i)==5)
+	board.addCardFromString("6D")
+        self.assert_iterator(hand.combinations_of_eight_or_lower(5),
+                             count=6,
+                             assert_item_function=lambda i: len(i)==5)
+        # Now add a card that should have no effect on results
+	board.addCardFromString("TD")
+        self.assert_iterator(hand.combinations_of_eight_or_lower(5),
+                             count=6,
+                             assert_item_function=lambda i: len(i)==5)
 
     def testBoardToString(self):
 	board = Board.fromString("7C 8C 9C")
@@ -77,4 +107,4 @@ class TestSequenceFunctions(unittest.TestCase):
 			     False, "%s not False" % board)
 
 if __name__ == "__main__":
-    unittest.main()
+    testing.main()

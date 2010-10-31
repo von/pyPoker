@@ -25,6 +25,24 @@ class LowRanker(RankerBase):
                 lowRank = rank
         return lowRank
 
+    @classmethod
+    def bestHand(cls, hands):
+        """Riven an array of hands, return the best hands and their rank.
+
+        Returns an array of best hand indexes (even if there is just
+        one) and the rank of those hands."""
+        best_hands = []
+        best_rank = None
+        for index, hand in enumerate(hands):
+            rank = cls.rankHand(hand)
+            if rank is None:
+                continue
+            if (best_rank is None) or (rank < best_rank):
+                best_hands = [index]
+                best_rank = rank
+            elif best_rank == rank:
+                best_hands.append(index)
+        return best_hands, best_rank
 
     @classmethod
     def _rankHand(cls, hand):
@@ -92,3 +110,26 @@ class LowRanker(RankerBase):
         atLeastOne.remove(quadsRank)
         return PokerRank.quads(quadsRank, atLeastOne)
 
+class EightLowRanker(LowRanker):
+    """Given a hand return its PokerRank if it qualifies for a 8-low or better.
+
+    Ignore straights and flushes (i.e. wheel is best low hand)."""
+    
+    @classmethod
+    def rankHand(cls, hand):
+        """Given a Hand returna a PokerRank for its best 8-low hand.
+
+        Returns None if hand does not qualify for 8-low or better.
+
+        Limted to Hands of five to seven cards."""
+        hand.makeAcesLow()
+        # Iterate through all the possible sets of cards in hand and
+        # find the highest rank
+        lowRank = None
+        for cards in hand.combinations_of_eight_or_lower(5):
+            rank = cls._rankHand(cards)
+            if (lowRank is None) or (rank < lowRank):
+                lowRank = rank
+        return lowRank
+
+        

@@ -3,7 +3,7 @@
 from Cards import Card, Rank, Suit
 from Hand import CommunityCardHand, FiveCardBoard
 from PokerException import PokerException
-from PokerGame import CommunityCardPokerGame
+import PokerGame
 from PokerRank import PokerRank
 from Ranker import RankerBase
 from Utils import assertInstance
@@ -113,10 +113,32 @@ class Hands(pyPoker.Hands.Hands):
 class HandGenerator(pyPoker.HandGenerator.HandGenerator):
     handClass = Hand
 
-class Game(CommunityCardPokerGame):
-    handClass = Hand
-    gameName = "Texas Hold'em"
+class Simulator(PokerGame.Simulator):
+    """HoldEm Simulator"""
 
+    HandClass=Hand
+    GAME_NAME = "Texas Hold'em"
+
+    def __init__(self,
+                 number_of_hands=9,
+                 predefined_hands=None,
+                 predefined_board=None):
+        """Initialize simulation.
+
+        number_of_hands is number of hands total to simulate.
+
+        predefined_hands should be a Hands instances and can containe
+        either Hand or HandGenerator instances. For a latter a new
+        hand will be generated for each simulation.
+
+        predefined_board should be a predefined set of community cards.
+        Setting this for a HandClass that doesn't support a board will
+        raise an error."""
+        PokerGame.Simulator.__init__(self,
+                                     number_of_hands=number_of_hands,
+                                     predefined_hands=predefined_hands,
+                                     predefined_board=predefined_board)
+                                     
 class StartingHandRanker(RankerBase):
     """Rank starting HoldEm hands"""
     
