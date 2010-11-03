@@ -2,9 +2,9 @@
 
 import random
 
+from Action import Action, InvalidActionException
 from Hand import Hand
 from PokerException import PokerException
-from PokerGame import Action, InvalidActionException
 
 ######################################################################
 #

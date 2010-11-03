@@ -64,6 +64,7 @@ profiles:
 # List in order to be tested
 UNITTESTS = \
 	test-testing \
+	test-Action \
 	test-Bitfield \
 	test-Cards \
 	test-PredefinedCards \

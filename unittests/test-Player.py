@@ -3,12 +3,12 @@
 
 import unittest
 
+from pyPoker.Action import Action, InvalidActionException
 from pyPoker.Deck import Deck
 from pyPoker.Player import Player, Table, \
     PlayerAlreadySeatedException, \
     SeatFullException, \
     TableFullException
-from pyPoker.PokerGame import Action, InvalidActionException
 
 class TestSequenceFunctions(unittest.TestCase):
 
