@@ -3,7 +3,7 @@
 
 import testing
 
-from pyPoker.Action import Action, InvalidActionException
+from pyPoker.Action import Action, ActionRequest, InvalidActionException
 
 class TestSequenceFunctions(testing.TestCase):
     """Tests for Action module"""
@@ -152,6 +152,94 @@ class TestSequenceFunctions(testing.TestCase):
             raise InvalidActionException()
         self.assertRaises(InvalidActionException, f)
 
+    def test_ActionRequest(self):
+        """Test ActionRequest class"""
+        request = ActionRequest(ActionRequest.ANTE_REQUEST, 10)
+        self.assertIsNotNone(request)
+        self.assertTrue(request.is_ante_request())
+        self.assertEqual(request.amount, 10)
+        self.assertEqual(str(request), "ante request for 10")
+        request.validate_action(Action.new_ante(10))
+
+    def test_ante_ActionRequest(self):
+        """Test ActionRequest for ante"""
+        amount = 20
+        request = ActionRequest.new_ante_request(amount)
+        self.assertIsNotNone(request)
+        self.assertTrue(request.is_ante_request())
+        self.assertEqual(request.amount, amount)
+        request.validate_action(Action.new_ante(amount))
+        request.validate_action(Action.new_fold())
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_ante(amount+1))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_call(amount))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_bet(amount))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_raise(amount))
+
+    def test_blind_ActionRequest(self):
+        """Test ActionRequest for blind"""
+        amount = 50
+        request = ActionRequest.new_blind_request(amount)
+        self.assertIsNotNone(request)
+        self.assertTrue(request.is_blind_request())
+        self.assertEqual(request.amount, amount)
+        request.validate_action(Action.new_blind(amount))
+        request.validate_action(Action.new_fold())
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_blind(amount+1))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_call(amount))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_bet(amount))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_raise(amount))
+
+    def test_opening_bet_ActionRequest(self):
+        """Test ActionRequest for opening bet"""
+        amount = 50
+        request = ActionRequest.new_opening_bet_request(amount)
+        self.assertIsNotNone(request)
+        self.assertTrue(request.is_opening_bet_request())
+        self.assertEqual(request.amount, amount)
+        request.validate_action(Action.new_check())
+        request.validate_action(Action.new_bet(amount))
+        request.validate_action(Action.new_fold())
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_ante(amount))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_blind(amount))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_call(amount))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_bet(amount+1))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_raise(amount))
+
+    def test_call_ActionRequest(self):
+        """Test ActionRequest for call"""
+        amount = 50
+        request = ActionRequest.new_call_request(amount, raise_amount=amount*2)
+        self.assertIsNotNone(request)
+        self.assertTrue(request.is_call_request())
+        self.assertEqual(request.amount, amount)
+        self.assertEqual(request.raise_amount, amount*2)
+        self.assertEqual(str(request), "call request for 50 or raise of 100")
+        request.validate_action(Action.new_call(amount))
+        request.validate_action(Action.new_raise(amount*2))
+        request.validate_action(Action.new_fold())
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_ante(amount))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_blind(amount))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_call(amount+1))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_bet(amount))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_raise(amount*2-1))
 
 if __name__ == "__main__":
     testing.main()

@@ -4,7 +4,7 @@ import copy
 import itertools
 import random
 
-from Action import Action
+from Action import Action, ActionRequest
 from PokerException import PokerException
 from Hand import Hand, CommunityCardHand
 from Hands import Hands
@@ -341,12 +341,10 @@ class Game(object):
             active_players = self.table.get_active_players()
             betting = hand_state.new_betting_round()
             betting.set_action(active_players[0])
+            request = ActionRequest.new_ante_request(ante_amount)
             for player in active_players:
-                if player.stack < ante_amount:
-                    action = Action.new_ante(player.stack,
-                                             all_in=True)
-                else:
-                    action = Action.new_ante(ante_amount)
+                action = player.get_action(request, self, hand_state)
+                request.validate_action(action)
                 betting.process_action(action)
                 self.report_action(player, action)
             betting.sweep_bets_into_pot()
@@ -385,8 +383,9 @@ class Game(object):
         betting_round = hand_state.get_current_betting_round()
         while not betting_round.is_pot_good():
             player = betting_round.get_action_player()
-            self.debug("Action is on %s" % player)
-            action = player.get_action(self, hand_state)
+            request = self._get_action_request(hand_state)
+            self.debug("Action is on {}: {}".format(player, request))
+            action = player.get_action(request, self, hand_state)
             betting_round.process_action(action)
             self.report_action(player, action)
         betting_round.sweep_bets_into_pot()
@@ -409,6 +408,19 @@ class Game(object):
                               winning_rank))
             pot.distribute(high_winners = winning_players)
             pot = pot.parent
+
+    def _get_action_request(self, hand_state):
+        """Generate an ActionRequest for player whom action is currently on"""
+        betting_round = hand_state.get_current_betting_round()
+        required_to_call = betting_round.required_to_call()
+        minimum_bet = self.structure.get_minimum_bet(betting_round)
+        if required_to_call == 0:
+            request = ActionRequest.new_opening_bet_request(minimum_bet)
+        else:
+            request = ActionRequest.new_call_request(\
+                required_to_call,
+                raise_amount = required_to_call + minimum_bet)
+        return request
 
 ######################################################################
 

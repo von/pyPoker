@@ -84,32 +84,57 @@ class Player(object):
         """Is the player folded?"""
         return (self.status == self.STATUS_FOLDED)
 
-    def get_action(self, game, hand_state):
+    def get_action(self, request, game, hand_state):
         """Get a players betting action.
 
         Returns a Action instance."""
-        betting_round = hand_state.get_current_betting_round()
-        required_to_call = betting_round.required_to_call()
-        minimum_bet = game.structure.get_minimum_bet(betting_round)
-        random_number = random.random()
-        if required_to_call == 0:
-            # No bet required, check 75%, bet 25%
-            if random_number < .75:
-                action = Action.new_check()
-            else:
-                action = Action.new_bet(min(minimum_bet, self.stack),
-                                        all_in=minimum_bet >= self.stack)
+        if request.is_ante_request():
+            action = self.get_ante_action(request, game, hand_state)
+        elif request.is_blind_request():
+            action = self.get_blind_action(request, game, hand_state)
+        elif request.is_opening_bet_request():
+            action = self.get_opening_bet_action(request, game, hand_state)
+        elif request.is_call_request():
+            action = self.get_call_action(request, game, hand_state)
         else:
-            # Bet in front of us, fold 50%, call 35%, raise 15%
-            if random_number < .50:
-                action = Action.new_fold()
-            elif (random_number < .85) or (self.stack <= required_to_call):
-                action = Action.new_call(min(required_to_call, self.stack),
-                                         all_in=required_to_call >= self.stack)
-            else:
-                raise_amount = required_to_call + minimum_bet
-                action = Action.new_raise(min(raise_amount, self.stack),
-                                          all_in=raise_amount >= self.stack)
+            raise ValueError("Unrecognized ActionRequest: {}".format(request))
+        return action
+
+    def get_ante_action(self, request, game, hand_state):
+        """Get Action in response to ante request"""
+        return Action.new_ante(min(request.amount, self.stack),
+                               all_in = request.amount >= self.stack)
+
+    def get_blind_action(self, request, game, hand_state):
+        """Get Action in response to blind request"""
+        return Action.new_blind(min(request.amount, self.stack),
+                                all_in = request.amount >= self.stack)
+
+    def get_opening_bet_action(self, request, game, hand_state):
+        """Get Action in response to opening bet request"""
+        # No bet required, check 75%, bet 25%
+        random_number = random.random()
+        if random_number < .75:
+            action = Action.new_check()
+        else:
+            action = Action.new_bet(min(request.amount, self.stack),
+                                    all_in=request.amount >= self.stack)
+        return action
+
+    def get_call_action(self, request, game, hand_state):
+        """Get Action in response to call request"""
+        # Bet in front of us, fold 50%, call 35%, raise 15% (if allowed)
+        random_number = random.random()
+        if (random_number < .15) and \
+                (request.raise_amount is not None) and \
+                (self.stack > request.amount):
+            action = Action.new_raise(min(request.raise_amount, self.stack),
+                                      all_in=request.raise_amount >= self.stack)
+        elif random_number < .50:
+            action = Action.new_call(min(request.amount, self.stack),
+                                     all_in=request.amount >= self.stack)
+        else:
+            action = Action.new_fold()
         return action
 
     def message(self, string):
