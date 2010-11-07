@@ -320,6 +320,9 @@ class Game(object):
 
     def play_hand(self):
         """Play a hand."""
+        if len(self.table.get_active_players()) < 2:
+            raise PokerGameStateException(\
+                "Need at least two active players to play a hand")
         self.message("New hand starting")
         hand_state = HandState(self.table, self.message_handler)
         for step in self.STEPS:

@@ -496,14 +496,19 @@ class TestSequenceFunctions(unittest.TestCase):
 
     def test_Game_play_hand(self):
         """Test Game.play_hand() method"""
-        players = [
-            Player(name="Player One", stack=1000),
-            Player(name="Player Two", stack=1000),
-            Player(name="Player Three", stack=1000)
-            ]
+        players = [ Player(name="Player One", stack=1000) ]
         table = Table(players = players)
+        self.assertEqual(len(table.get_active_players()), 1)
         structure = Structure(Structure.LIMIT, ante=5, blinds=[10])
         game = Game(table, structure, console=self.console)
+        # Trying to play a hand with only one player should be an exception
+        with self.assertRaises(PokerGameStateException):
+            game.play_hand()
+        table.seat_players([
+            Player(name="Player Two", stack=1000),
+            Player(name="Player Three", stack=1000)
+            ])
+        self.assertEqual(len(table.get_active_players()), 3)
         hand_state = game.play_hand()
         self.assertIsInstance(hand_state, HandState)
 
