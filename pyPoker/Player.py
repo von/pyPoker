@@ -5,6 +5,7 @@ import random
 from Action import Action, InvalidActionException
 from Hand import Hand
 from PokerException import PokerException
+from Utils import assertInstance
 
 ######################################################################
 #
@@ -172,6 +173,7 @@ class Table(object):
         """Create a table with given number of seats.
 
         Seat array of players if given."""
+        assertInstance(number_of_seats, int)
         self.number_of_seats = number_of_seats
         # One extra seat for seat 0 which we don't use to keep
         # indexing simple.
