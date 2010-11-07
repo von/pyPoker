@@ -379,6 +379,8 @@ class Game(object):
     def deal_hands(self, hand_state):
         """Deal full hands to all players."""
         hand_state.deal_cards(self.HandClass.maxCards)
+        for player in self.table.get_active_players():
+            self.debug("{}: {}".format(player, player._hand))
 
     def betting_round(self, hand_state):
         """Handle betting"""
