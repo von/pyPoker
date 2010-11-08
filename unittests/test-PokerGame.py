@@ -511,6 +511,12 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEqual(len(table.get_active_players()), 3)
         hand_state = game.play_hand()
         self.assertIsInstance(hand_state, HandState)
+        # Make sure all players states have been reset
+        for player in table.get_seated_players():
+            if player.stack > 0:
+                self.assertTrue(player.is_active())
+            else:
+                self.assertTrue(player.is_sitting_out())
 
 if __name__ == "__main__":
     unittest.main()

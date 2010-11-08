@@ -329,6 +329,13 @@ class Game(object):
             self.debug("Hand step: %s" % step)
             code = "self.%s(hand_state)" % step
             eval(code)
+        # Reset state of any all-in or folded players.
+        # Make any players with stack of 0 sitting out.
+        for player in self.table.get_seated_players():
+            if (player.stack > 0) and not player.is_sitting_out():
+                player.make_active()
+            else:
+                player.sit_out()
         self.table.advance_dealer()
         return hand_state
 
