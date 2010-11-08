@@ -24,6 +24,9 @@ class TableFullException(PokerException):
     """Table is full."""
     pass
 
+class ZeroStackException(PokerException):
+    """Player's stack is zero."""
+    pass
 
 ######################################################################
 
@@ -68,6 +71,16 @@ class Player(object):
         """Muck the player's hand, setting player's status to folded"""
         self._hand = None
         self.status = self.STATUS_FOLDED
+
+    def make_active(self):
+        """Make the player active. Stack must be non-zero."""
+        if self.stack == 0:
+            raise ZeroStackException()
+        self.status = self.STATUS_ACTIVE
+
+    def sit_out(self):
+        """Change player's status to sitting out."""
+        self.status = self.STATUS_SITTING_OUT
 
     def is_sitting_out(self):
         """Is the player sitting out?"""

@@ -8,7 +8,8 @@ from pyPoker.Deck import Deck
 from pyPoker.Player import Player, Table, \
     PlayerAlreadySeatedException, \
     SeatFullException, \
-    TableFullException
+    TableFullException, \
+    ZeroStackException
 
 class TestSequenceFunctions(unittest.TestCase):
 
@@ -27,8 +28,14 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertIsNotNone(player)
         self.assertEqual(str(player), "Bob")
         self.assertTrue(player.is_sitting_out())
+        with self.assertRaises(ZeroStackException):
+            player.make_active()
         player2 = Player(stack=10)
         self.assertEqual(str(player2), "Unnamed Player")
+        self.assertTrue(player2.is_active())
+        player2.sit_out()
+        self.assertTrue(player2.is_sitting_out())
+        player2.make_active()
         self.assertTrue(player2.is_active())
         player.new_hand()
         self.assertTrue(player.is_active())
