@@ -397,16 +397,20 @@ class Game(object):
 
     def pot_to_high_hand(self, hand_state):
         """Award pot to high hand using cls.HighRanker"""
+        self.message("Awarding pot to best high hand")
         # First calculate high ranks for all plays with hands
         high_ranks = {}
         for player in self.table.get_active_players():
             high_ranks[player] = self.HighRanker.rankHand(player._hand)
+            self.debug("{} has {} for a {}".format(player,
+                                                   player._hand,
+                                                   high_ranks[player]))
         # Now awarding pots starting with last side pot
         pot = hand_state.pot
         while pot is not None:
-            winning_players = max(pot.contending_players,
-                                  lambda p: high_ranks[p])
-            winning_rank = high_ranks[winning_players[0]]
+            winning_rank = max([high_ranks[p] for p in pot.contending_players])
+            winning_players = filter(lambda p: high_ranks[p] == winning_rank,
+                                     pot.contending_players)
             self.message("%s to %s with %s" % \
                              (pot,
                               ",".join([str(p) for p in winning_players]),
