@@ -42,6 +42,13 @@ class Player(object):
     STATUS_ALL_IN = 0x03
     STATUS_FOLDED = 0x04
 
+    STATUS_STRINGS = {
+        STATUS_SITTING_OUT : "sitting out",
+        STATUS_ACTIVE : "active",
+        STATUS_ALL_IN : "all_in",
+        STATUS_FOLDED : "folded",
+        }
+
     def __init__(self, name=None, stack=0, HandClass=Hand):
         if name is None:
             name = "Unnamed Player"
@@ -81,6 +88,10 @@ class Player(object):
     def sit_out(self):
         """Change player's status to sitting out."""
         self.status = self.STATUS_SITTING_OUT
+
+    def get_status(self):
+        """Return status as string"""
+        return self.STATUS_STRINGS[self.status]
 
     def is_sitting_out(self):
         """Is the player sitting out?"""
