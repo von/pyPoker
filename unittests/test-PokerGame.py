@@ -5,7 +5,7 @@ import StringIO
 import unittest
 
 from pyPoker import HoldEm
-from pyPoker.Action import Action, InvalidActionException
+from pyPoker.Action import Action, ActionRequest, InvalidActionException
 from pyPoker.Cards import Cards, Rank
 from pyPoker.Deck import Deck
 from pyPoker.Hand import Board, Hand
@@ -517,7 +517,33 @@ class TestSequenceFunctions(unittest.TestCase):
         game.deal_hands(hand_state)
         for player in players:
             self.assertEqual(len(player._hand), 5)
-        game.betting_round(hand_state)
+        # Simulate betting_round()
+        self.assertFalse(betting_round.is_pot_good())
+        action_request = game._get_action_request(hand_state)
+        self.assertIsInstance(action_request, ActionRequest)
+        # Should be call of blind
+        self.assertTrue(action_request.is_call_request())
+        self.assertEqual(action_request.amount, 10)
+        self.assertEqual(action_request.raise_amount, 20)
+        # Fold UTG
+        betting_round.process_action(Action.new_fold())
+        self.assertFalse(betting_round.is_pot_good())
+        # Should be same request as before
+        action_request2 = game._get_action_request(hand_state)
+        self.assertIsInstance(action_request2, ActionRequest)
+        self.assertTrue(action_request2.is_call_request())
+        self.assertEqual(action_request2.amount, 10)
+        self.assertEqual(action_request2.raise_amount, 20)
+        # Now raise
+        betting_round.process_action(Action.new_raise(20))
+        self.assertFalse(betting_round.is_pot_good())
+        # Action back on blind
+        action_request3 = game._get_action_request(hand_state)
+        self.assertIsInstance(action_request3, ActionRequest)
+        self.assertTrue(action_request3.is_call_request())
+        self.assertEqual(action_request3.amount, 10)
+        self.assertEqual(action_request3.raise_amount, 20)
+        betting_round.process_action(Action.new_call(10))
         self.assertTrue(betting_round.is_pot_good())
         game.pot_to_high_hand(hand_state)
 
