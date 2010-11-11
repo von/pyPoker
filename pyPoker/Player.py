@@ -121,6 +121,8 @@ class Player(object):
             action = self.get_opening_bet_action(request, game, hand_state)
         elif request.is_call_request():
             action = self.get_call_action(request, game, hand_state)
+        elif request.is_option_request():
+            action = self.get_option_action(request, game, hand_state)
         else:
             raise ValueError("Unrecognized ActionRequest: {}".format(request))
         return action
@@ -160,6 +162,18 @@ class Player(object):
                                      all_in=request.amount >= self.stack)
         else:
             action = Action.new_fold()
+        return action
+
+    def get_option_action(self, request, game, hand_state):
+        """Get Action in request to option request"""
+        # Calls in front of us, raise 25%, check 75%
+        random_number = random.random()
+        if (random_number < .25) and \
+                (self.stack > 0):
+            action = Action.new_raise(min(request.raise_amount, self.stack),
+                                      all_in=request.raise_amount >= self.stack)
+        else:
+            action = Action.new_check()
         return action
 
     def message(self, string):

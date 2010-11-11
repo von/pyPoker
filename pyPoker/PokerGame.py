@@ -431,7 +431,13 @@ class Game(object):
         required_to_call = betting_round.required_to_call()
         minimum_bet = self.structure.get_minimum_bet(betting_round)
         if required_to_call == 0:
-            request = ActionRequest.new_opening_bet_request(minimum_bet)
+            if betting_round.get_action_player().bet > 0:
+                # If player has money in the pot, it must be a blind so
+                # generate an option request
+                request = ActionRequest.new_option_request(minimum_bet)
+            else:
+                # Else, is standard opening bet request
+                request = ActionRequest.new_opening_bet_request(minimum_bet)
         else:
             request = ActionRequest.new_call_request(\
                 required_to_call,
@@ -684,6 +690,9 @@ class BettingRound(object):
         # Last player to bet or raise
         self.last_to_bet = None
         #
+        # Last player to put in a blind
+        self.last_to_blind = None
+        #
         # Is pot good?
         self.pot_is_good = False
         #
@@ -723,6 +732,12 @@ class BettingRound(object):
         if self.action_is_on is self.last_to_bet:
             # Action is back on last player to bet or raise,
             # pot is now good.
+            self.pot_is_good = True
+            self._message("Pot is good.")
+        if (self.last_to_bet is None) and \
+                (self.last_to_blind is not None) and \
+                (self.action_is_on is self.last_to_blind):
+            # No one called the blind
             self.pot_is_good = True
             self._message("Pot is good.")
         return self.action_is_on
@@ -778,6 +793,7 @@ class BettingRound(object):
             # Do not set last_to_bet here as a blind does not prevent
             # player from acting when betting comes back around to them.
             player.process_action(action)
+            self.last_to_blind = player
         elif action.is_call():
             if (action.amount != required_to_call) and not action.is_all_in():
                 raise InvalidActionException(\

@@ -140,12 +140,14 @@ class ActionRequest(object):
     BLIND_REQUEST = 0x01  # Request for a blind
     OPENING_BET_REQUEST = 0x02   # Bet or check
     CALL_REQUEST = 0x03  # Fold, call or raise
-    
+    OPTION_REQUEST = 0x05  # Option to big blind: Check or Raise
+
     __strs = {
         ANTE_REQUEST : "ante",
         BLIND_REQUEST : "blind",
         OPENING_BET_REQUEST : "opening bet",
         CALL_REQUEST : "call",
+        OPTION_REQUEST : "option",
         }
 
     def __init__(self, type, amount, raise_amount=None):
@@ -181,6 +183,13 @@ class ActionRequest(object):
                              amount = amount,
                              raise_amount = raise_amount)
 
+    @classmethod
+    def new_option_request(cls, raise_amount):
+        """Create a new option request"""
+        return ActionRequest(type = cls.OPTION_REQUEST,
+                             amount = None,
+                             raise_amount = raise_amount)
+
     ########################################
     # Action validation methods
 
@@ -196,6 +205,8 @@ class ActionRequest(object):
             self._check_opening_bet_action(action)
         elif self.is_call_request():
             self._check_call_action(action)
+        elif self.is_option_request():
+            self._check_option_action(action)
         else:
             raise InvalidActionException(\
                 "Unrecognized request type ({})".format(str(self)))
@@ -243,6 +254,16 @@ class ActionRequest(object):
         else:
             raise InvalidActionException(\
                 "Action ({}) is not call, fold or raise".format(str(action)))
+
+    def _check_option_action(self, action):
+        """Check action in request to option request"""
+        if action.is_check():
+            self._check_check(action)
+        elif action.is_raise():
+            self._check_raise(action)
+        else:
+            raise InvalidActionException(\
+                "Action ({}) is not check or raise".format(str(action)))
 
     def _check_action_amount(self, action):
         """Validate action amount.
@@ -328,12 +349,17 @@ class ActionRequest(object):
         """Is this a request for a call?"""
         return self.type == self.CALL_REQUEST
 
+    def is_option_request(self):
+        """Is this a request for a option?"""
+        return self.type == self.OPTION_REQUEST
+
     ########################################
     # Other methods
 
     def __str__(self):
-        s = "{} request for {}".format(self.__strs[self.type],
-                                       self.amount)
+        s = "{} request".format(self.__strs[self.type])
+        if self.amount is not None:
+            s += " for {}".format(self.amount)
         if self.raise_amount is not None:
             s += " or raise of {}".format(self.raise_amount)
         return s

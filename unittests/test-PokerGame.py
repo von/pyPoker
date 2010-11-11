@@ -384,7 +384,34 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEqual(side_pot1.amount, 500)
         self.assertListEqual(side_pot1.contending_players, [players[2]])
         self.assertIsNotNone(side_pot1.parent)
-       
+
+    def test_BettingRound_blind_walk(self):
+        """Test of BettingRound with a walk for the blind"""
+        players = [ Player(stack=500),
+                    Player(stack=100),
+                    Player(stack=1000),
+                    Player(stack=700) ]
+        table = Table()
+        table.seat_players(players, in_order=True)
+        message_handler = MessageHandler(table, self.console)
+        pot = Pot(players)
+        round = BettingRound(table, pot, message_handler)
+        action_is_on = players[0]
+        round.set_action(action_is_on)
+        # Player 0 50 blind, fold, fold, fold
+        round.process_action(Action.new_blind(50))
+        round.process_action(Action.new_fold())
+        round.process_action(Action.new_fold())
+        round.process_action(Action.new_fold())
+        self.assertTrue(round.is_pot_good())
+        round.sweep_bets_into_pot()
+        # At this point we should have a pot of 50 with only player
+        # 0 contending.
+        pot = round.pot
+        self.assertEqual(pot.amount, 50)
+        self.assertListEqual(pot.contending_players, [players[0]])
+        self.assertIsNone(pot.parent)
+
     def test_HandState(self):
         """Test HandState class"""
         players = [ Player(stack=500),

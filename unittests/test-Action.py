@@ -241,5 +241,23 @@ class TestSequenceFunctions(testing.TestCase):
         with self.assertRaises(InvalidActionException):
             request.validate_action(Action.new_raise(amount*2-1))
 
+    def test_option_ActionRequest(self):
+        """Test ActionRequest for option"""
+        amount = 50
+        request = ActionRequest.new_option_request(amount)
+        self.assertIsNotNone(request)
+        self.assertTrue(request.is_option_request())
+        self.assertEqual(request.raise_amount, amount)
+        request.validate_action(Action.new_check())
+        request.validate_action(Action.new_raise(amount))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_blind(amount+1))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_call(amount))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_bet(amount))
+        with self.assertRaises(InvalidActionException):
+            request.validate_action(Action.new_fold())
+
 if __name__ == "__main__":
     testing.main()
