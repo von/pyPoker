@@ -1,6 +1,7 @@
 """Wrapper around unittest.TestCase adding functionality"""
 
 import contextlib
+import doctest
 import os
 import sys
 import unittest
@@ -71,6 +72,15 @@ class TestCase(unittest.TestCase):
             reader.close()
             writer.close()
 
-def main(**kwargs):
-    """Wrapper around unittest.main()"""
-    return unittest.main(**kwargs)
+def main(doctest_modules=None, **kwargs):
+    """Wrapper around unittest.main()
+
+    Adds support for doctest_modules argumnt, which should be a list
+    of modues for which doctests should be run."""
+    if doctest_modules is not None:
+        for module in doctest_modules:
+            suite = doctest.DocTestSuite(module)
+            result = unittest.TextTestRunner().run(suite)
+            if not result.wasSuccessful():
+                sys.exit(1)
+    unittest.main(**kwargs)  # Does not return
