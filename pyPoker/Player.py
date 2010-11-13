@@ -79,6 +79,10 @@ class Player(object):
         self._hand = None
         self.status = self.STATUS_FOLDED
 
+    def get_public_hand_as_str(self):
+        """Return a string with the players hand as viewed publicly"""
+        return self._hand.get_public_string()
+            
     def make_active(self):
         """Make the player active. Stack must be non-zero."""
         if self.stack == 0:

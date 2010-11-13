@@ -64,6 +64,7 @@ class TestSequenceFunctions(unittest.TestCase):
         player.deal_card(deck)
         self.assertEqual(len(player._hand), 1)
         self.assertEqual(len(deck), 51)
+        self.assertEqual(player.get_public_hand_as_str(), "XX")
 
     def test_Table(self):
         """Test Table class"""
