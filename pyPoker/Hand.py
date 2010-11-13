@@ -90,6 +90,10 @@ class Hand(Cards):
 	    string += " xx"
 	return string.strip()
 
+    def get_public_string(self):
+        """Return a string representation of the hand as seen publicly"""
+        return " ".join(["XX" for card in self])
+
     def copy(self):
 	"""Return a copy of this Hand."""
 	import copy

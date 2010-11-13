@@ -38,6 +38,13 @@ class TestSequenceFunctions(testing.TestCase):
                              count=10,
                              assert_item_function=lambda i: len(i)==2)
 
+    def test_get_public_string(self):
+        """Test get_public_string() method"""
+        hand = Hand.fromString("9D 3C 5S")
+        self.assertEqual(hand.get_public_string(), "XX XX XX")
+        hand2 = Hand()
+        self.assertEqual(hand2.get_public_string(), "")
+
     def testBoardCombinations(self):
 	"""Test combinations with board."""
 	hand = HoldEm.Hand.fromString("AD 2D")
