@@ -1,11 +1,12 @@
 """Module for classes representing a PokerGame player and table of players"""
 
 import random
+import sys
 
 from Action import Action, InvalidActionException
 from Hand import Hand
 from PokerException import PokerException
-from Utils import assertInstance
+from Utils import assertInstance, UserSelection
 
 ######################################################################
 #
@@ -205,6 +206,99 @@ class Player(object):
 
     def __str__(self):
         return self.name
+
+######################################################################
+
+class HumanPlayer(Player):
+    """Interface to a human player.
+
+    >>> player=HumanPlayer("Jane", stack=1000, input=sys.stdin, output=sys.stdout)
+    >>> str(player)
+    'Jane'
+    >>> player.stack
+    1000
+    """
+
+    def __init__(self, name=None, stack=0, HandClass=Hand,
+                 input=sys.stdin, output=sys.stdout):
+        """Create an interface to human player using given input
+        and output streams."""
+        self.input = input
+        self.output = output
+        Player.__init__(self, name, stack, HandClass)
+
+    def get_opening_bet_action(self, request, game, hand_state):
+        """Get Action in response to open bet request"""
+        self.display_hand_state(request, game, hand_state)
+        user_selection = self._newUserSelection()
+        user_selection.add_option("c", "check", Action.new_check())
+        user_selection.add_option("b", "bet", Action.new_bet(request.amount))
+        return user_selection.get_user_selection()
+
+    def get_call_action(self, request, game, hand_state):
+        """Get Action in response to call request"""
+        self.display_hand_state(request, game, hand_state)
+        user_selection = self._newUserSelection()
+        user_selection.add_option("c",
+                                  "call {}".format(request.amount),
+                                  Action.new_call(request.amount))
+        user_selection.add_option("f", "fold", Action.new_fold())
+        if request.raise_amount != None:
+            user_selection.add_option(\
+                "r",
+                "raise to {}".format(request.raise_amount),
+                Action.new_raise(request.raise_amount))
+        return user_selection.get_user_selection()
+
+    def display_hand_state(self, request, game, hand_state):
+        """Display current hand state to player"""
+        self.message("Pot: {}".format(hand_state.pot))
+        self.display_players(game, hand_state)
+        self.display_hand(game, hand_state) 
+
+    def display_players(self, game, hand_state):
+        """Display other players at the table"""
+        # Start at player after myself and go around table
+        player = game.table.get_next_player(self)
+        while player is not self:
+            self.display_player(player)
+            player = game.table.get_next_player(player)
+
+    def display_player(self, player):
+        """Display given player"""
+        player_str = "{0}: Stack: {0.stack}".format(player)
+        if player.is_sitting_out():
+            self.message("{} - Sitting out".format(player_str))
+        elif player.is_folded():
+            self.message("{} - Folded".format(player_str))
+        else:
+            all_in_str = "(ALL-IN)" if player.is_all_in() else ""
+            self.message("{} Bet: {} {} Hand: {}"\
+                             .format(player_str,
+                                     player.bet,
+                                     all_in_str,
+                                     player.get_public_hand_as_str()))
+
+    def display_hand(self, game, hand_state):
+        """Display players hand"""
+        rank_strs = []
+        if game.HighRanker is not None:
+            high_rank = game.HighRanker.rankHand(self._hand)
+            rank_strs.append("High: {}".format(high_rank))
+        if game.LowRanker is not None:
+            low_rank = game.LowRanker.rankHand(self._hand)
+            rank_strs.append("Low: {}".format(low_rank))
+        self.message("Your hand: {} ({})".format(self._hand,
+                                                 " ".join(rank_strs)))
+                     
+    def message(self, string):
+        """Handle a message to the player."""
+        self.output.write(string.rstrip() + "\n")
+
+    def _newUserSelection(self):
+        """Return a new UserSelection instance"""
+        return UserSelection(input_stream=self.input,
+                             output_stream=self.output)
 
 ######################################################################
 
