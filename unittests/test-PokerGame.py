@@ -426,6 +426,38 @@ class TestBettingRound(testing.TestCase):
         self.assertListEqual(pot.contending_players, [players[0]])
         self.assertIsNone(pot.parent)
 
+    def test_BettingRound_called_to_blind(self):
+        """Test of BettingRound with calls around to blind.
+
+        Blind should still have option to act."""
+        players = [ Player(stack=500),
+                    Player(stack=100),
+                    Player(stack=1000),
+                    Player(stack=700) ]
+        table = Table()
+        table.seat_players(players, in_order=True)
+        message_handler = MessageHandler(table, self.console)
+        pot = Pot(players)
+        round = BettingRound(table, pot, message_handler)
+        action_is_on = players[0]
+        round.set_action(action_is_on)
+        # Player 0 50 blind, fold, fold, fold
+        round.process_action(Action.new_blind(50))
+        round.process_action(Action.new_fold())
+        round.process_action(Action.new_call(50))
+        round.process_action(Action.new_fold())
+        # Back on blind
+        self.assertFalse(round.is_pot_good())
+        round.process_action(Action.new_check())
+        self.assertTrue(round.is_pot_good())
+        round.sweep_bets_into_pot()
+        # At this point we should have a pot of 50 with only player
+        # 0 contending.
+        pot = round.pot
+        self.assertEqual(pot.amount, 100)
+        self.assertListEqual(pot.contending_players, [players[0], players[2]])
+        self.assertIsNone(pot.parent)
+
 class TestHandState(testing.TestCase):
 
     def setUp(self):
