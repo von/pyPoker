@@ -950,14 +950,3 @@ class Structure(object):
         else:
             # One minimum for all rounds
             return self.bet_sizes
-
-    def validate_bet(self, action, game_state):
-        """Make sure bet represented by given action is legal.
-
-        Raises InvalidAtionException if not legal."""
-        # XXX This is assuming limit.
-        # XXX This is ignoring a double bet allowed if pair showing
-        bet_size = self.bet_sizes[game_state.betting_round]
-        if action.amount != bet_size:
-            raise InvalidActionException("Invalid bet size: %d != %d" % \
-                                             (action.amount, bet_size))
