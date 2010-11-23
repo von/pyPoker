@@ -2,7 +2,6 @@
 """Unittests for PokerGame module"""
 
 import StringIO
-import unittest
 
 from pyPoker import HoldEm
 from pyPoker.Action import Action, ActionRequest, InvalidActionException
@@ -20,11 +19,9 @@ from pyPoker.PokerGame import \
 from pyPoker.PokerRank import PokerRank
 from pyPoker.Ranker import Ranker
 
-class TestSequenceFunctions(unittest.TestCase):
+import testing
 
-    def setUp(self):
-        # For message handlers
-        self.console = file("/tmp/pypoker-console.log", "a")
+class TestSimulator(testing.TestCase):
 
     def test_Simulator(self):
         """Test basic Simulator construction"""
@@ -53,6 +50,8 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertIsNotNone(stats)
         self.assertIsInstance(stats, Stats)
 
+class TestResult(testing.TestCase):
+
     def test_Result(self):
         """Test basic construction and operation of Result instance"""
         deck = Deck()
@@ -73,6 +72,7 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEqual(low_rank, result.winning_low_rank)
         self.assertListEqual(hands, result.hands)
 
+class TestStats(testing.TestCase):
     def test_Stats(self):
         """Test basic construction and operation of Stats instance"""
         stats = Stats()
@@ -145,7 +145,13 @@ class TestSequenceFunctions(unittest.TestCase):
             self.assertEqual(0, stats.low_winners[index])
             self.assertEqual(0, stats.scoops[index])
 
-    def test_MessageHander(self):
+class TestMessageHandler(testing.TestCase):
+
+    def setUp(self):
+        # For message handlers
+        self.console = file("/tmp/pypoker-console.log", "a")
+
+    def test_MessageHandler(self):
         """Test the MessageHandler class"""
         buffer = StringIO.StringIO()
         handler = MessageHandler(Table(), console=buffer)
@@ -155,6 +161,8 @@ class TestSequenceFunctions(unittest.TestCase):
         s2 = "Hello again"
         handler.debug(s2)
         self.assertEqual(buffer.getvalue(), s + "\n" + "DEBUG: " + s2 + "\n")
+
+class TestPot(testing.TestCase):
 
     def test_Pot(self):
         """Test Pot class"""
@@ -261,6 +269,12 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEqual(player_one.stack, 50)
         self.assertEqual(player_two.stack, 50)
         self.assertEqual(player_three.stack, 100)
+
+class TestBettingRound(testing.TestCase):
+
+    def setUp(self):
+        # For message handlers
+        self.console = file("/tmp/pypoker-console.log", "a")
 
     def test_BettingRound(self):
         """Test BettingRound class"""
@@ -412,6 +426,12 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertListEqual(pot.contending_players, [players[0]])
         self.assertIsNone(pot.parent)
 
+class TestHandState(testing.TestCase):
+
+    def setUp(self):
+        # For message handlers
+        self.console = file("/tmp/pypoker-console.log", "a")
+
     def test_HandState(self):
         """Test HandState class"""
         players = [ Player(stack=500),
@@ -438,6 +458,8 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEqual(hand_state.get_current_betting_round(), betting_round2)
         self.assertEqual(len(hand_state.betting_rounds), 2)
         self.assertIsNotNone(hand_state.dump_to_string())
+
+class TestStructure(testing.TestCase):
 
     def test_Structure_limit(self):
         """Test a Limit Structure class"""
@@ -486,6 +508,12 @@ class TestSequenceFunctions(unittest.TestCase):
         betting_round = 1
         self.assertEqual(structure.get_minimum_bet(betting_round=betting_round),
                          max(blinds))
+
+class TestGame(testing.TestCase):
+
+    def setUp(self):
+        # For message handlers
+        self.console = file("/tmp/pypoker-console.log", "a")
 
     def test_Game(self):
         """Test Game class"""
@@ -572,4 +600,4 @@ class TestSequenceFunctions(unittest.TestCase):
                 self.assertTrue(player.is_sitting_out())
 
 if __name__ == "__main__":
-    unittest.main()
+    testing.main()
