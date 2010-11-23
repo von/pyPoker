@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 """Unittests for player module"""
 
-import unittest
+import testing
 
 from pyPoker.Action import Action, InvalidActionException
 from pyPoker.Deck import Deck
+import pyPoker.Player
 from pyPoker.Player import Player, Table, \
     PlayerAlreadySeatedException, \
     SeatFullException, \
     TableFullException, \
     ZeroStackException
 
-class TestSequenceFunctions(unittest.TestCase):
+class TestSequenceFunctions(testing.TestCase):
 
     def test_new_Player(self):
         """Test basic Player construction."""
@@ -130,6 +131,6 @@ class TestSequenceFunctions(unittest.TestCase):
         table.set_dealer(players[1])
         self.assertEqual(table.get_dealer(), players[1])
         self.assertEqual(str(table), "1: One 2: Two* 3: Three 4: Four")
-                                               
+
 if __name__ == "__main__":
-    unittest.main()
+    testing.main(doctest_modules=[pyPoker.Player])
