@@ -400,6 +400,7 @@ class Game(object):
             action = player.get_action(request, self, hand_state)
             betting_round.process_action(action)
             self.report_action(player, action)
+        self.message("Pot is good")
         betting_round.sweep_bets_into_pot()
 
     def pot_to_high_hand(self, hand_state):
@@ -733,13 +734,11 @@ class BettingRound(object):
             # Action is back on last player to bet or raise,
             # pot is now good.
             self.pot_is_good = True
-            self._message("Pot is good.")
         if (self.last_to_bet is None) and \
                 (self.last_to_blind is not None) and \
                 (self.action_is_on is self.last_to_blind):
             # No one called the blind
             self.pot_is_good = True
-            self._message("Pot is good.")
         return self.action_is_on
 
     def is_pot_good(self):
