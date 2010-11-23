@@ -250,6 +250,18 @@ class HumanPlayer(Player):
                 Action.new_raise(request.raise_amount))
         return user_selection.get_user_selection()
 
+    def get_option_action(self, request, game, hand_state):
+        """Get Action in request to option request"""
+        self.display_hand_state(request, game, hand_state)
+        user_selection = self._newUserSelection()
+        user_selection.add_option("c",
+                                  "check",
+                                  Action.new_check())
+        user_selection.add_option("r",
+                                  "raise {}".format(request.raise_amount),
+                                  Action.new_raise(request.raise_amount))
+        return user_selection.get_user_selection()
+
     def display_hand_state(self, request, game, hand_state):
         """Display current hand state to player"""
         self.message("Pot: {}".format(hand_state.pot))
