@@ -429,10 +429,11 @@ class Game(object):
     def _get_action_request(self, hand_state):
         """Generate an ActionRequest for player whom action is currently on"""
         betting_round = hand_state.get_current_betting_round()
+        player = betting_round.get_action_player()
         required_to_call = betting_round.required_to_call()
         minimum_bet = self.structure.get_minimum_bet(betting_round)
         if required_to_call == 0:
-            if betting_round.get_action_player().bet > 0:
+            if player.bet > 0:
                 # If player has money in the pot, it must be a blind so
                 # generate an option request
                 request = ActionRequest.new_option_request(minimum_bet)
