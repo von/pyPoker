@@ -63,6 +63,9 @@ profiles:
 
 # List in order to be tested
 UNITTESTS = \
+	test-testing \
+	test-Utils \
+	test-Action \
 	test-Bitfield \
 	test-Cards \
 	test-PredefinedCards \
@@ -72,8 +75,11 @@ UNITTESTS = \
 	test-HoldEm \
 	test-LowRanker \
 	test-Omaha \
+	test-FiveCardStud \
+	test-SevenCardStud \
 	test-PokerRank \
 	test-HandGenerator \
+	test-Player \
 	test-PokerGame \
 	test-Ranker
 

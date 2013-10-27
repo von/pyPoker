@@ -128,6 +128,23 @@ class Ranker(RankerBase):
         return highRank
 
     @classmethod
+    def bestHand(cls, hands):
+        """Riven an array of hands, return the best hands and their rank.
+
+        Returns an array of best hand indexes (even if there is just
+        one) and the rank of those hands."""
+        best_hands = []
+        best_rank = None
+        for index, hand in enumerate(hands):
+            rank = cls.rankHand(hand)
+            if (best_rank is None) or (rank > best_rank):
+                best_hands = [index]
+                best_rank = rank
+            elif best_rank == rank:
+                best_hands.append(index)
+        return best_hands, best_rank
+
+    @classmethod
     def _rankSixOrSevenCardHand(cls, cards):
         """Given a set of 6 or 7 cards, return a PokerRank for its best hand.
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-"""Unittests for Five Card Stude module"""
+"""Unittests for Seven Card Stud module"""
 
 import testing
 
-from pyPoker import FiveCardStud
-from pyPoker.PokerGame import Result, Stats
+from pyPoker import SevenCardStud
+from pyPoker.PokerGame import Result, Stats, TooManyHandsException
 
 class TestSequenceFunctions(testing.TestCase):
 
@@ -12,10 +12,10 @@ class TestSequenceFunctions(testing.TestCase):
 	pass
 
     def test_Simulator(self):
-        """Test FiveCardStud.Simulator"""
-        simulator = FiveCardStud.Simulator()
+        """Test SevenCardStud.Simulator"""
+        simulator = SevenCardStud.Simulator()
         self.assertIsNotNone(simulator)
-        self.assertEqual(simulator.GAME_NAME, "Five-card Stud")
+        self.assertEqual(simulator.GAME_NAME, "Seven-card Stud")
         result = simulator.simulate_game()
         self.assertIsNotNone(result)
         self.assertIsInstance(result, Result)
@@ -24,16 +24,22 @@ class TestSequenceFunctions(testing.TestCase):
         self.assertIsInstance(stats, Stats)
 
     def test_HiLoSimulator(self):
-        """Test FiveCardStud.HiLoSimulator"""
-        simulator = FiveCardStud.HiLoSimulator()
+        """Test SevenCardStud.HiLoSimulator"""
+        simulator = SevenCardStud.HiLoSimulator()
         self.assertIsNotNone(simulator)
-        self.assertEqual(simulator.GAME_NAME, "Five-card Stud Hi/Lo")
+        self.assertEqual(simulator.GAME_NAME, "Seven-card Stud Hi/Lo")
         result = simulator.simulate_game()
         self.assertIsNotNone(result)
         self.assertIsInstance(result, Result)
         stats = simulator.simulate_games(number_of_games=4)
         self.assertIsNotNone(stats)
         self.assertIsInstance(stats, Stats)
+
+    def test_Simulator_TooManyHandsException(self):
+        """Test SevenCardStud.Simulator generating NotEnoughCardsException"""
+        self.assertRaises(TooManyHandsException,
+                          SevenCardStud.Simulator,
+                          number_of_hands=9)
 
 if __name__ == "__main__":
     testing.main()

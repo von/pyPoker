@@ -35,6 +35,16 @@ class TestSequenceFunctions(unittest.TestCase):
         for i, card in enumerate(kickers):
             self.assertEqual(card.rank, kickerRanks[i])
 
+    def testMax(self):
+        """Test using max() with PokerRank"""
+        ranks = [
+            PokerRank.pair(Rank.QUEEN, kickers = Cards.fromString("JC 8D 4S")),
+            PokerRank.straight(Rank.TEN),
+            PokerRank.trips(Rank.SEVEN, kickers = Cards.fromString("AD JC")),
+            ]
+        max_rank = max(ranks)
+        self.assertEqual(max_rank.getType(), PokerRank.STRAIGHT)
+
     def testKickerSort(self):
         """Test sorting of kickers."""
         kickers = Cards.fromString("8C KS AH")
